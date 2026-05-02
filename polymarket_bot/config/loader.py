@@ -127,6 +127,8 @@ class PaperTradingConfig(BaseModel):
     partial_fill_prob: float = 0.1
     data_dir: str = "~/.trading_bot"
     initial_balance: float = 50000.0
+    swap_fee_bps: int = 200          # 2% swap fee (Polymarket AMM fee)
+    gas_fee_usd: float = 0.01        # gas fee on Polygon (~$0.01 per trade)
 
 class TradingAssetsConfig(BaseModel):
     # Dynamic: BTC, ETH, SOL, etc.

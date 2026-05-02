@@ -92,12 +92,13 @@ class TradingBot:
         # Open positions tracking (order_id → position dict)
         self.positions: Dict[str, dict] = {}
 
-        # Portfolio state
-        self.portfolio_value = (
-            self.config.backtest.initial_capital
-            if self.config.app.dry_run
-            else 0.0  # Will be fetched from exchange
-        )
+        # Portfolio state - set initial value based on mode
+        if self.config.app.paper_trading:
+            self.portfolio_value = self.config.paper_trading.initial_balance
+        elif self.config.app.dry_run:
+            self.portfolio_value = self.config.backtest.initial_capital
+        else:
+            self.portfolio_value = 0.0  # Will be fetched from exchange
 
         # Control flags
         self.running = False
@@ -152,8 +153,12 @@ class TradingBot:
             # Restore positions
             self.positions = data.get('positions', {})
 
-            # Restore portfolio value
-            self.portfolio_value = data.get('portfolio_value', self.config.backtest.initial_capital)
+            # Restore portfolio value - use appropriate default based on mode
+            if self.config.app.paper_trading:
+                default_balance = self.config.paper_trading.initial_balance
+            else:
+                default_balance = self.config.backtest.initial_capital
+            self.portfolio_value = data.get('portfolio_value', default_balance)
 
             # Restore stats (merge with defaults)
             saved_stats = data.get('stats', {})
@@ -331,10 +336,14 @@ class TradingBot:
                             asset=asset,
                             window=window
                         )
-                        # PnL
-                        pnl = (current_price - pos['entry_price']) * pos['shares']
+                        # PnL from paper trading engine (net of fees)
+                        pnl = sell_order.get('pnl', 0.0) if sell_order else 0.0
                         self.stats['total_pnl'] += pnl
-                        self.portfolio_value += pnl
+                        # Sync portfolio value with paper trading total equity (cash + unrealized)
+                        if hasattr(self.client, 'get_total_equity'):
+                            self.portfolio_value = self.client.get_total_equity()
+                        else:
+                            self.portfolio_value += pnl
                         self.stats['trades_settled'] += 1
                         self._increment_daily_trades()
                         to_close.append(order_id)
@@ -411,9 +420,37 @@ class TradingBot:
     async def initialize(self) -> None:
         """Connect to exchange and initialize all matrices."""
         self.logger.info("Initializing exchange connection...")
-        # Choose client implementation based on dry_run flag
         # Choose client based on mode
-        if self.config.app.dry_run:
+        if self.config.app.paper_trading:
+            # Paper trading mode — wrap client in PaperTradingEngine
+            self.logger.info("Paper trading mode enabled — simulating orders")
+            if self.config.app.dry_run:
+                # Dry run + paper trading: use mock client wrapped in PaperTradingEngine
+                from polymarket_bot.exchange.client import PolymarketClient as MockClient
+                live_client = MockClient(
+                    dry_run=True,
+                    sandbox=False,
+                    base_url=self.config.exchange.api.base_url,
+                    ws_url=self.config.exchange.api.ws_url
+                )
+                await live_client.connect()
+            else:
+                # Live + paper trading: use real client wrapped in PaperTradingEngine
+                from polymarket_bot.exchange.amm_client import PolymarketAMMClient
+                live_client = PolymarketAMMClient(
+                    self.config,
+                    dry_run=False,
+                    sandbox=False,
+                    amm_base_url=self.config.exchange.amm.base_url,
+                    gas_limit=self.config.exchange.amm.gas_limit,
+                    gas_price_gwei=self.config.exchange.amm.gas_price_gwei,
+                    wallet_address=self.config.exchange.auth.wallet_address,
+                    private_key=self.config.exchange.auth.private_key or '',
+                )
+                await live_client.connect()
+            self.client = PaperTradingEngine(live_client, self.config)
+        elif self.config.app.dry_run:
+            # Dry run only (no paper trading) — use mock client
             from polymarket_bot.exchange.client import PolymarketClient as MockClient
             self.client = MockClient(
                 dry_run=True,
@@ -423,9 +460,9 @@ class TradingBot:
             )
             await self.client.connect()
         else:
-            # Live mode — use Polymarket API
+            # Live mode — use real client
             from polymarket_bot.exchange.amm_client import PolymarketAMMClient
-            live_client = PolymarketAMMClient(
+            self.client = PolymarketAMMClient(
                 self.config,
                 dry_run=False,
                 sandbox=False,
@@ -435,13 +472,7 @@ class TradingBot:
                 wallet_address=self.config.exchange.auth.wallet_address,
                 private_key=self.config.exchange.auth.private_key or '',
             )
-            await live_client.connect()
-            # If paper_trading flag is set, wrap client to simulate execution
-            if self.config.app.paper_trading:
-                self.logger.info("Paper trading mode enabled — simulating orders with real-time data")
-                self.client = PaperTradingEngine(live_client, self.config)
-            else:
-                self.client = live_client
+            await self.client.connect()
 
         # Fetch markets and create matrices for each enabled asset/window
         markets = await self.client.get_markets()
@@ -484,8 +515,11 @@ class TradingBot:
             balance = await self.client.get_balance()
             self.portfolio_value = balance
         except NotImplementedError:
-            # Live mode account fetch not implemented
-            self.portfolio_value = self.config.backtest.initial_capital
+            # Live mode account fetch not implemented, use appropriate initial balance
+            if self.config.app.paper_trading:
+                self.portfolio_value = self.config.paper_trading.initial_balance
+            else:
+                self.portfolio_value = self.config.backtest.initial_capital
         self.logger.info(f"Starting portfolio = ${self.portfolio_value:,.2f}")
 
         self.stats["start_time"] = datetime.now(timezone.utc)
@@ -634,6 +668,10 @@ class TradingBot:
                     "order_id": order["order_id"]
                 }
 
+                # Sync portfolio value with paper trading total equity
+                if hasattr(self.client, 'get_total_equity'):
+                    self.portfolio_value = self.client.get_total_equity()
+
                 self.stats["trades_entered"] += 1
                 self._increment_daily_trades()
                 self.logger.info("Trade entered",
@@ -708,6 +746,10 @@ class TradingBot:
         while self.running:
             print("[EVAL] Loop iteration start", flush=True)
             loop_start = asyncio.get_event_loop().time()
+
+            # Sync portfolio value with paper trading total equity (net of fees)
+            if hasattr(self.client, 'get_total_equity'):
+                self.portfolio_value = self.client.get_total_equity()
 
             # Dynamic discovery: refresh latest markets from Polymarket
             if hasattr(self.client, "refresh_markets"):

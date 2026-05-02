@@ -37,13 +37,14 @@ class SimulatedPosition:
     side: str  # "long" or "short"
     outcome_id: int
     entry_price: float  # fill price (includes spread/slippage)
-    size: float  # USD notional
+    size: float  # USD notional (amount intended for position, excluding fees)
     quantity: int  # number of contracts
     entry_time: str
     current_price: float
     current_pnl: float
     max_price: float = 0.0
     min_price: float = 1e9
+    total_cost_usd: float = 0.0  # total USD spent to open (including fees)
 
 class PaperTradingEngine(BaseExchangeClient):
     """
@@ -63,6 +64,9 @@ class PaperTradingEngine(BaseExchangeClient):
         self.slippage_bps = pt_config.slippage_bps
         self.fill_latency_ms = pt_config.fill_latency_ms
         self.partial_fill_prob = pt_config.partial_fill_prob
+        # Fees
+        self.swap_fee_bps = getattr(pt_config, 'swap_fee_bps', 200)   # default 2%
+        self.gas_fee_usd = getattr(pt_config, 'gas_fee_usd', 0.01)    # default $0.01
         data_dir = Path(pt_config.data_dir).expanduser()
         data_dir.mkdir(parents=True, exist_ok=True)
         self.positions_file = data_dir / "paper_positions.json"
@@ -219,6 +223,16 @@ class PaperTradingEngine(BaseExchangeClient):
         quantity = int(size_usd / fill_price) if fill_price > 0 else 0
         asset = market_id.split('_')[0]
         pid = f"{asset}:{outcome_id}"
+
+        # Fees
+        fee_rate = self.swap_fee_bps / 10000
+        fee = size_usd * fee_rate
+        gas = self.gas_fee_usd
+        total_cost = size_usd + fee + gas
+
+        # Deduct total cost from balance
+        self.current_balance -= total_cost
+
         pos = SimulatedPosition(
             asset=asset,
             side="long",
@@ -228,12 +242,12 @@ class PaperTradingEngine(BaseExchangeClient):
             quantity=quantity,
             entry_time=datetime.utcnow().isoformat(),
             current_price=fill_price,
-            current_pnl=0.0,
+            current_pnl=(quantity * fill_price) - total_cost,  # net P&L after fees
             max_price=fill_price,
-            min_price=fill_price
+            min_price=fill_price,
+            total_cost_usd=total_cost,
         )
         self.positions[pid] = pos
-        self.current_balance -= size_usd
         self.trade_log.append({
             "time": pos.entry_time,
             "asset": asset,
@@ -241,9 +255,12 @@ class PaperTradingEngine(BaseExchangeClient):
             "price": fill_price,
             "size_usd": size_usd,
             "quantity": quantity,
-            "type": "entry"
+            "type": "entry",
+            "fee_usd": fee,
+            "gas_usd": gas,
+            "total_cost_usd": total_cost,
         })
-        logger.info(f"[PAPER] BUY filled: {asset} ${size_usd} @ {fill_price:.4f}")
+        logger.info(f"[PAPER] BUY filled: {asset} ${size_usd} @ {fill_price:.4f} (fee=${fee:.2f}, gas=${gas:.2f})")
         self._save_state()
         return {"filled": True, "price": fill_price, "quantity": quantity, "status": "filled"}
 
@@ -257,8 +274,20 @@ class PaperTradingEngine(BaseExchangeClient):
             fill_price_ask = self._apply_spread(price, "sell")  # selling at bid side
             slippage = fill_price_ask * (self.slippage_bps / 10000) * (pos.size / 1000)
             fill_price = fill_price_ask - slippage
-            pnl = pos.size * (fill_price - pos.entry_price) / pos.entry_price
-            self.current_balance += pos.size + pnl
+
+            # Gross proceeds
+            gross_proceeds = pos.quantity * fill_price
+            # Fees
+            fee_rate = self.swap_fee_bps / 10000
+            sell_fee = gross_proceeds * fee_rate
+            gas = self.gas_fee_usd
+            net_proceeds = gross_proceeds - sell_fee - gas
+
+            # P&L: net proceeds - total cost (including buy fees)
+            pnl = net_proceeds - pos.total_cost_usd
+            # Update balance: add net proceeds (cost already deducted at buy)
+            self.current_balance += net_proceeds
+
             self.trade_log.append({
                 "time": datetime.utcnow().isoformat(),
                 "asset": asset,
@@ -268,9 +297,12 @@ class PaperTradingEngine(BaseExchangeClient):
                 "quantity": pos.quantity,
                 "type": "exit",
                 "entry_price": pos.entry_price,
-                "pnl": pnl
+                "pnl": pnl,
+                "sell_fee_usd": sell_fee,
+                "gas_usd": gas,
+                "net_proceeds": net_proceeds,
             })
-            logger.info(f"[PAPER] SELL (exit) filled: {pid} @ {fill_price:.4f} P&L=${pnl:.2f}")
+            logger.info(f"[PAPER] SELL (exit) filled: {pid} @ {fill_price:.4f} P&L=${pnl:.2f} (fee=${sell_fee:.2f}, gas=${gas:.2f})")
             del self.positions[pid]
             self._save_state()
             return {"filled": True, "price": fill_price, "pnl": pnl, "status": "filled"}
@@ -278,14 +310,24 @@ class PaperTradingEngine(BaseExchangeClient):
             # Open short
             size_usd = price * amount if price else 100
             result = self._simulate_fill({"side": "sell", "price": price, "size": size_usd})
-        self.total_orders += 1
-        if result["filled"]:
-            self.filled_orders += 1
+            self.total_orders += 1
+            if result["filled"]:
+                self.filled_orders += 1
             if not result["filled"]:
                 logger.info(f"[PAPER] SELL (short) not filled: {market_id}")
                 return None
             fill_price = result["fill_price"]
             quantity = int(size_usd / fill_price) if fill_price > 0 else 0
+
+            # Fees for short entry
+            fee_rate = self.swap_fee_bps / 10000
+            fee = size_usd * fee_rate
+            gas = self.gas_fee_usd
+            # Net cash received: you receive size_usd but pay fee and gas
+            net_cash_in = size_usd - fee - gas
+            # For short, total_cost_usd is positive inflow (cash received)
+            self.current_balance += net_cash_in
+
             pos = SimulatedPosition(
                 asset=asset,
                 side="short",
@@ -295,12 +337,12 @@ class PaperTradingEngine(BaseExchangeClient):
                 quantity=quantity,
                 entry_time=datetime.utcnow().isoformat(),
                 current_price=fill_price,
-                current_pnl=0.0,
+                current_pnl=net_cash_in - (quantity * fill_price),  # net P&L after fees
                 max_price=fill_price,
-                min_price=fill_price
+                min_price=fill_price,
+                total_cost_usd=net_cash_in,  # positive inflow (cash received)
             )
             self.positions[pid] = pos
-            self.current_balance += size_usd  # receive cash from short sale
             self.trade_log.append({
                 "time": pos.entry_time,
                 "asset": asset,
@@ -308,9 +350,12 @@ class PaperTradingEngine(BaseExchangeClient):
                 "price": fill_price,
                 "size_usd": size_usd,
                 "quantity": quantity,
-                "type": "entry"
+                "type": "entry",
+                "fee_usd": fee,
+                "gas_usd": gas,
+                "net_cash_in": net_cash_in,
             })
-            logger.info(f"[PAPER] SELL (short) filled: {asset} ${size_usd} @ {fill_price:.4f}")
+            logger.info(f"[PAPER] SELL (short) filled: {asset} ${size_usd} @ {fill_price:.4f} (fee=${fee:.2f}, gas=${gas:.2f})")
             self._save_state()
             return {"filled": True, "price": fill_price, "quantity": quantity, "status": "filled"}
 
@@ -332,16 +377,20 @@ class PaperTradingEngine(BaseExchangeClient):
         }
 
     def update_market_prices(self, price_updates: Dict[str, float]):
-        """Update mark-to-market for open positions."""
+        """Update mark-to-market for open positions (net of fees)."""
         for pid, pos in self.positions.items():
             new_price = price_updates.get(pos.asset)
             if not new_price:
                 continue
             pos.current_price = new_price
             if pos.side == "long":
-                pos.current_pnl = pos.size * (new_price - pos.entry_price) / pos.entry_price
-            else:
-                pos.current_pnl = pos.size * (pos.entry_price - new_price) / pos.entry_price
+                # Net P&L = current value - total cost (including fees)
+                current_value = pos.quantity * new_price
+                pos.current_pnl = current_value - pos.total_cost_usd
+            else:  # short
+                # Net P&L = net cash received - current cost to buy back
+                current_liability = pos.quantity * new_price
+                pos.current_pnl = pos.total_cost_usd - current_liability
             if new_price > pos.max_price:
                 pos.max_price = new_price
             if new_price < pos.min_price:
@@ -351,4 +400,9 @@ class PaperTradingEngine(BaseExchangeClient):
         if self.total_orders == 0:
             return 1.0
         return self.filled_orders / self.total_orders
+
+    def get_total_equity(self) -> float:
+        """Return total portfolio equity: cash balance + unrealized P&L."""
+        unrealized = sum(p.current_pnl for p in self.positions.values())
+        return self.current_balance + unrealized
 
