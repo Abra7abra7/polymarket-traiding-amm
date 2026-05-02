@@ -1,0 +1,20 @@
+======================================================================
+  POLYMARKET MARKOV TRADING BOT — 24H REPORT
+======================================================================
+  Generated: 2026-04-19T14:12:00.162806
+  Bot mode: DRY-RUN (paper trading)
+
+── PROMETHEUS METRICS
+  Matrix Diagonal Mean     : 0.03
+  Matrix Transitions Total : 14.00
+  Matrix Valid             : 1.00
+  Open Positions Count     : 0.00
+  Portfolio Value Usd      : 50,000.00
+
+── RECENT LOG (last 300 lines)
+----------------------------------------------------------------------
+Log unavailable: [Errno 2] No such file or directory: '/tmp/trading_bot_24h.log'
+
+======================================================================
+  END OF REPORT
+======================================================================

@@ -1,0 +1,12 @@
+EXIT SUMMARY — 2026-04-21 19:45
+
+Period: last 24h (journalctl)
+Total exits: 4
+Total realized P&L: $+95.53
+Win rate: 3/4 (75%)
+
+Details:
+  Apr 21 19:43:28 dryrun-buy-000136 ETH 5m P&L=+43.18 reason=take_profit_3pct
+  Apr 21 19:43:29 dryrun-buy-000148 BTC 5m P&L=+55.51 reason=take_profit_3pct
+  Apr 21 19:44:29 dryrun-buy-000149 ETH 5m P&L=-21.95 reason=trailing_stop_2pct
+  Apr 21 19:45:29 dryrun-buy-000150 LON_RAIN 1h P&L=+18.79 reason=take_profit_3pct

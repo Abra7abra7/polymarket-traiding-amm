@@ -1,0 +1,101 @@
+📊 POLYMARKET WEATHER BOT — DAILY REPORT
+Generated: 2026-04-19 10:24 UTC
+Server: hermes-agent-hetzner (root)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. PROCESS STATUS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Systemd: ✅ ACTIVE
+PID: 127662 (via systemctl)
+Port 9090: ❌ DOWN
+Uptime: ~3 hours (since 10:16 UTC)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. CONFIGURATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Mode: DRY-RUN (no real money)
+Assets configured: 5
+  • BTC   — 5m window, max $1000
+  • ETH   — 1h window, max $1000
+  • LON_RAIN — 1h+6h windows, max $300 each
+  • VIE_RAIN — 1h+6h windows, max $300 each
+  • PRG_RAIN — 1h+6h windows, max $300 each
+
+Thresholds:
+  tau (persist):   0.7  ← lowered from 0.87
+  eps (gap):       0.03  ← lowered from 0.05
+  min_probability: 0.01
+
+Markov params:
+  n_states:        20
+  min_transitions: 10  ← lowered from 15
+  window_sizes:
+    5m: 30 data points
+    1h: 24 data points
+    6h: 14 data points
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. CURRENT METRICS (live)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Portfolio value: $N/A
+Total trades:    0
+Open positions:  0
+
+Matrix status:
+  transitions:    0 / 10 (min for build)
+  is_valid:       NO  (need ≥10 transitions)
+  diag_mean:      0.0  (target ≥ tau=0.7)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. RECENT ACTIVITY (last 2 min)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+The bot cycles every 60s through all 8 asset/window combos.
+Recent log excerpts:
+  [MATRIX] TRANSITION 12→13  buffer=3  min=10
+  [MATRIX] TRANSITION 11→11  buffer=3  min=10
+  [MATRIX] TRANSITION 9→10   buffer=3  min=10
+  [MATRIX] TRANSITION 9→9    buffer=3  min=10
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. TRADE READINESS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Conditions for ENTER:
+  C1: persist (diag_mean)  ≥ tau (0.7)   current: 0.0
+  C2: gap (p̂ – price)     ≥ eps (0.03)   N/A until matrix valid
+  C3: p̂                   ≥ 0.01                       N/A until matrix valid
+
+Status: ⏳ WAITING FOR MATRIX TO BECOME VALID
+  → Need 10 transitions (currently 0)
+  → Then need diag_mean ≥ 0.7
+
+Expected timeline:
+  • Matrix valid:     ~10:27–10:30 UTC (7–10 min)
+  • diag_mean buildup: ~10:35–10:45 UTC (additional 5–15 min)
+  • First potential trade: ≈10:45–11:00 UTC (if diag_mean ≥ 0.7)
+
+⚠️  If diag_mean stays below 0.7, we'll lower tau to 0.60 or 0.55.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. MONITORING & ALERTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Cron jobs:
+  • */5 min:  monitor_events.py → /opt/trading_bot/reports/monitor_cron.log
+  • 0 6 * * *: daily_export.py → /opt/trading_bot/reports/
+  • @reboot:  agentmail_monitor.py
+  • 0 */2 * * *: send_audit_report.py
+
+Telegram alerts: ENABLED (Home Channel: 243422219)
+Log files:  /opt/trading_bot/logs/bot_current.log
+Metrics:    http://localhost:9090/metrics
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. NEXT STEPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[ ] Wait for matrix_valid = 1 (~10:27 UTC)
+[ ] Check diag_mean trend (should climb toward tau)
+[ ] If no trade by 10:45 UTC → lower tau to 0.60
+[ ] If still no trade by 11:00 UTC → lower tau to 0.55 OR increase volatility in mock markets
+[ ] After 24h of data: consider adding real Polymarket weather markets (requires API credentials)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+END OF REPORT

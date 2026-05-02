@@ -1,0 +1,127 @@
+
+ANALÝZA SPOLOČNOSTI ASCENTIA s. r. o.
+Business Due Diligence Report
+Dátum: 19. apríla 2026
+IČO: 51858959  |  DIČ: 2120816071
+
+==========================================
+1. ZÁKLADNÉ IDENTIFIKAČNÉ ÚDAJE
+==========================================
+Obchodné meno:     ASCENTIA s. r. o.
+Právna forma:      Spoločnosť s ručením obmedzeným (s.r.o.)
+IČO:               51858959
+DIČ:               2120816071
+Sídlo:             Klincová 37/B, Bratislava - mestská časť Ružinov, 821 08, Slovenská republika
+Dátum zápisu:      02. augusta 2018
+Založená:          02. augusta 2018 (zakladateľska listina z 12.07.2018)
+Registrový súd:    Mestský súd Bratislava III
+Oddiel / vložka:   Sro 130384/B
+
+==========================================
+2. VLASTNÍCKA A RIADIACA ŠTRUKTÚRA
+==========================================
+Základné imanie:   5 000 EUR (plne splatené)
+
+Štatutárny orgán (Konateľ):
+  — Marián Stančík
+  — Adresa: Černáková 2046/8, Brezno 977 01, Slovenská republika
+  — Funkciu vykonáva samostatne od: 02.08.2018
+  — Poznámka: Osoba je stotožnená s referenčným registrom RFO (Registrum finančných úradov).
+
+Spoločníci:
+  — Marián Stančík (jediný spoločník od 25.05.2022)
+  — Výška vkladu: 5 000 EUR (peňažný vklad, plne splatený)
+
+Iné ďalšie právne skutočnosti:
+  Spoločnosť bola založená v zmysle § 105 – 153 Obchodného zákonníka (zák. č. 513/1991 Zb.).
+
+==========================================
+3. PREDMET PODNIKANIA
+==========================================
+Podľa Obchodného registra (ORS R) je predmetom podnikania široké portfolio aktivít:
+
+  — Výroba počítačových, elektronických a optických výrobkov
+  — Kúpa tovaru na účely predaja (maloobchod a veľkoobchod)
+  — Počítačové služby a služby súvisiace s počítačovým spracovaním údajov
+  — Finančný lízing
+  — Poskytovanie úverov a pôžičiek z peňažných zdrojov
+  — Prenájom nehnuteľností (s doplnkovými službami)
+  — Činnosť podnikateľských, organizačných a ekonomických poradcov
+  — Výskum a vývoj v oblasti prírodných, technických, spoločenských a humanitných vied
+  — Reklamné a marketingové služby, prieskum trhu a verejnej mienky
+  — Prenájom hnuteľných vecí
+  — Vykonávanie mimoškolskej vzdelávacej činnosti
+  — Oprava osobných potrieb a potrieb pre domácnosť
+
+Hlavná SK NACE kód: 2611 — Výroba elektronických komponentov.
+
+==========================================
+4. FINANČNÝ PREHĽAD (FinStat.sk)
+==========================================
+Dostupné údaje za rok 2025 (posledné uverejnené):
+  — Tržby za tovar, výrobky a služby:     0 €   (zhruba od roku 2022 tržby sú nulové)
+  — Celkové výnosy (vrátane ostatných príjmov):  8 € / rok (2022–2024), v roku 2021: 4 764 €
+  — Strata za rok:                         -624 €  (v roku 2025; strata sa v minulosti zvýšila o 88 %)
+  — Aktíva (k 31.12.2025):                27 618 €
+      • Dlhodobý finančný majetok:         16 000 €
+      • Krátkodobé pohľadávky:             10 000 €
+      • Finančné účty:                     1 618 €
+  — Vlastný kapitál:                       -2 709 €  (negatívny, znamená záporné čisté imanie)
+  — Základné imanie (akciové):             5 000 €
+  — Vysvetlenie negatívneho vlastného kapitálu:
+      • Výsledok hospodárenia minulých rokov: -7 088 €
+      • Výsledok hospodárenia za obdobie 2025 po zdanení: -624 €
+  — Celková zadlženosť:                    109,81 %  (zadlženosť presahuje Solvedí 100 % kapitálu)
+  — Fondy zo zisku:                         3 €
+
+Trendy z posledných 5 rokov (z histogramov FinStat):
+  — Rok 2021: tržby 3 309 €, strata -1 973 €
+  — Rok 2022: tržby 0 €, strata -4 350 €
+  — Rok 2023: tržby 0 €, strata -278 €
+  — Rok 2024: tržby 0 € (neznáma strata)
+  — Rok 2025: tržby 0 €, strata -624 €, aktíva 27 618 €
+
+Dôležité udalosti (podľa FinStat):
+  — Posledný zápis v ORSR: 30. marca 2026
+  — Žiadne známe exekúcie, konkurzy či dlhopisy (podľa dostupných údajov)
+
+==========================================
+5. DAŇOVÉ ÚDAJE
+==========================================
+DIČ: 2120816071
+Daň z príjmu: Splatná daň za posledné roky je vizuálne znázornená, konkrétne čísla nie sú dostupné bez prémie.
+Hodnotenie daňovej spoľahlivosti: N/A (bez prémie)
+
+==========================================
+6. ANALÝZA A ZHRŇENIE
+==========================================
+a) Právna forma a registrácia:
+   – Spoločnosť je oficiálne zapísaná v ORSR (Mestský súd Bratislava III) od 02.08.2018.
+   – IČO 51858959 je potvrdený; predtým v memory bol uvádzaný IČO 54421890 — nesúlad.
+
+b) Štruktúra vlastníctva a riadenia:
+   – Jediný spoločník/konateľ: Marián Stančík (tiež uvedený v profile používateľa Hermes).
+   – Základné imanie 5 000 EUR je nízke pre s.r.o. s rozsiahlym predmetom podnikania.
+
+c) Finančný zdravotný stav:
+   – Spoločnosť nie je finančne zdravá: tržby sú nulové od roku 2022; dosahuje straty každý rok.
+   – Negatívny vlastný kapitál (-2 709 €) indikuje, že pasíva presahujú aktíva.
+   – Zadlženosť 109,81 % je vysoko kritická — spoločnosť je viacmenej cez 100 % závislá od dlhu.
+   – Aktíva 27 618 € pozostávajú predovšetkým z finančných aktiv (16k € dlhodobý finančný majetok) — potenciálne spekulatívne alebo nekonkretné aktíva.
+   – Dlhodobý trend: od roku 2021 zaznamenáva straty v každom roku, príjmy null.
+
+d) Spekulatívne riziká:
+   — Nízka quality and sustainability of business operations; podnikateľská aktivita sa zdá byť minimálna alebo neexistujúca.
+   — Vysoká finančná zraniteľnosť, riziko insolvencie v prípade, že nie sú dostupné ďalšie injekcie kapitálu od majiteľa.
+   — Nízka transparentnosť finančných údajov (pre podrobnosti vyžaduje FinStat PREMIUM).
+
+e) Zdroje údajov:
+   — ORSR: https://www.orsr.sk/vypis.asp?ID=438027&SID=2
+   — FinStat: https://finstat.sk/51858959
+
+==========================================
+7. ZÁVER
+==========================================
+Spoločnosť ASCENTIA s. r. o. je aktívne zapísaná v obchodnom registri, ale jej finančné ukazovatele naznačujú vážne problémy — nulové tržby a systematické straty, záporný vlastný kapitál a nadmerná zadlženosť. 
+Kvalita podnikania a potenciál na budúce obchodné spolupráce je veľmi obmedzený. Pre detailné overenie财务状况, ratingu a historických finančných výkazov odporúčame zakúpiť FinStat PREMIUM alebo požiadať o právne záväzný výpis z ORSR.
+

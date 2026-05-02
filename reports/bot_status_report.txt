@@ -1,0 +1,48 @@
+POLYMARKET TRADING BOT — STATUS REPORT
+Generated: 2026-04-22 11:17:13
+
+RUNTIME:
+  Status:    RUNNING (PID 210504)
+  Mode:      DRY-RUN (simulation — no real trades)
+  Uptime:    ~50s (restarted 11:08 CEST)
+
+PORTFOLIO:
+  Start:     $50,000.00
+  Current:   $50,122.53
+  Total P&L: +$122.53  (+0.25%)
+
+TRADES:
+  Entered:   389
+  Settled:   383
+  Open:      5
+  Matrices:  154
+
+ACTIVE POSITIONS:
+  dryrun-000287: ETH (5m) entry=$0.5816 current=$0.5925 P&L=$+18.74 (+187.41%)
+  dryrun-000290: HYPERLIQUID (1h) entry=$0.5020 current=$0.5295 P&L=$+43.81 (+547.81%)
+  dryrun-000004: ETH (5m) entry=$0.5617 current=$0.0000 P&L=$+0.00 (+0.00%)
+  dryrun-000005: LON_RAIN (1h) entry=$0.5013 current=$0.0000 P&L=$+0.00 (+0.00%)
+  dryrun-000006: HYPERLIQUID (1h) entry=$0.5072 current=$0.0000 P&L=$+0.00 (+0.00%)
+
+ASSETS: 76 configured (BTC, ETH, TAO, HYPERLIQUID + 33 weather markets)
+  Timeframes: 5m, 1h, 6h
+  Max per position: $5000 (config), default $1000/asset
+
+PARAMETERS:
+  tau=0.05  epsilon=0.03  n_states=20  min_transitions=2
+  smoothing_alpha=0.05  window_sizes: 5m=30, 1h=24, 6h=14
+
+ISSUES:
+  ⚠️  exchange.portfolio not set in config.yaml
+  ⚠️  DRY-RUN mode (no real trades)
+  ⚠️  Telegram alerts broken (bad token)
+  ⚠️  Redis not connected
+
+NEXT TO GO LIVE:
+  1. Set POLYMARKET_PRIVATE_KEY + POLYMARKET_WALLET in ~/.hermes/.env
+  2. Set exchange.portfolio: 50000  in config.yaml
+  3. Remove --dry-run from systemd service or set DRY_RUN=false
+  4. sudo systemctl daemon-reload && sudo systemctl restart polymarket-bot
+  5. Verify: sudo journalctl -u polymarket-bot -f
+
+Full HTML report: /opt/trading_bot/reports/bot_status_report.html

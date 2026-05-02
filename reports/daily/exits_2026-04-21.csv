@@ -1,0 +1,4 @@
+time,order_id,asset,window,entry_price,exit_price,shares,pnl,pnl_pct,hold_time_hours,reason,p_hat,kelly_fraction,entry_time
+Apr 21 19:43:28,dryrun-buy-000136,ETH,5m,,0.5868,,43.18109999999998,,,take_profit_3pct,,,
+Apr 21 19:43:29,dryrun-buy-000148,BTC,5m,,0.6653,,55.51000000000005,,,take_profit_3pct,,,
+Apr 21 19:44:29,dryrun-buy-000149,ETH,5m,,0.5657,,-21.945600000000077,,,trailing_stop_2pct,,,

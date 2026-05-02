@@ -1,0 +1,168 @@
+# Polymarket Markov Trading Bot — Configuration Example
+# Copy to config/config.yaml and edit values marked with TODO
+
+app:
+  name: "polymarket-markov-bot"
+  version: "1.0.0"
+  environment: "development"  # development | staging | production
+  dry_run: true              # START TRUE! Set to false for live trading
+
+# Exchange configuration
+exchange:
+  platform: "polymarket"
+  api:
+    base_url: "https://api.polymarket.com"
+    ws_url: "wss://api.polymarket.com/market/v1"
+    timeout: 10
+    max_retries: 3
+    backoff_factor: 2.0
+
+  auth:
+    method: "wallet_signature"  # or "api_key"
+    # Private key from environment variable: POLYMARKET_PRIVATE_KEY
+    # API key from environment variable: POLYMARKET_API_KEY
+
+# Assets to trade
+trading:
+  assets:
+    BTC:
+      symbol: "BTC"
+      market_id: "TODO: Get from /markets API"  # e.g., "0x1234..."
+      windows: ["5m", "1h"]
+      enabled: true
+      max_position_usd: 1000   # Hard cap per asset (in live mode)
+
+    ETH:
+      symbol: "ETH"
+      market_id: "TODO: Get from /markets API"
+      windows: ["1h"]
+      enabled: false  # Enable after BTC stable
+      max_position_usd: 1000
+
+    # Uncomment and fill after testing BTC
+    # SOL:
+    #   symbol: "SOL"
+    #   market_id: "TODO"
+    #   windows: ["5m", "1h"]
+    #   enabled: false
+    #   max_position_usd: 500
+
+  # Markov parameters (from paper)
+  markov:
+    n_states: 100              # Price bins (0.01 increments)
+    min_transitions: 30        # Minimum ticks before matrix is valid
+    smoothing_alpha: 0.3       # EMA smoothing (0 = off, 1 = all new)
+    window_sizes:
+      "5m": 5                  # Keep last 5 ticks for 5-min window
+      "1h": 60                 # Keep last 60 ticks for 1h window
+
+  # Entry thresholds (Equation 2.2 and 2.3 from paper)
+  thresholds:
+    tau: 0.87                  # Persistence threshold (P[j*,j*] ≥ 0.87)
+    eps: 0.05                  # Gap threshold (model - market ≥ 0.05)
+    min_probability: 0.01      # Ignore probabilities below 1%
+
+  # Position sizing
+  position:
+    method: "kelly"           # "kelly" | "fixed" | "custom"
+    kelly:
+      cap_max: 0.80            # Never bet more than 80% (even if Kelly says more)
+      cap_min: 0.05            # Never bet less than 5%
+    fixed:
+      fraction: 0.10           # If method="fixed", bet 10% each time
+
+  # Order execution
+  execution:
+    order_type: "limit"        # "limit" or "market"
+    limit_timeout_seconds: 30  # Cancel unfilled limit orders after 30s
+    slippage_tolerance_bps: 10 # Max acceptable slippage (0.1%) for warnings
+
+# Risk management
+risk:
+  max_open_positions: 5        # Total concurrent positions across all assets
+  max_daily_trades: 100        # Circuit breaker — stop after N trades/day
+  max_drawdown: 0.20           # Stop trading if drawdown exceeds 20%
+  max_position_size_usd: 5000  # Hard cap per single trade
+  max_position_size_pct: 0.10  # Max 10% of portfolio per position
+
+  # Kill switches
+  kill_switches:
+    daily_loss_limit_usd: 5000   # Stop if losing $5K in one day
+    hourly_loss_limit_usd: 1000  # Or $1K in one hour
+
+# Data storage
+storage:
+  redis:
+    host: "localhost"
+    port: 6379
+    db: 0
+    prefix: "trading:"
+    matrix_ttl: 3600           # Matrix expires after 1 hour (rebuild)
+    password: null            # Set if Redis auth enabled
+
+  postgres:
+    host: "localhost"
+    port: 5432
+    database: "trading_bot"
+    user: "${DB_USER}"          # From environment variable
+    password: "${DB_PASSWORD}"  # From environment variable
+    min_connections: 5
+    max_connections: 20
+
+  # Local checkpoints (for crash recovery)
+  checkpoint:
+    enabled: true
+    path: "~/.trading_bot/checkpoint.json"
+    interval_minutes: 60
+
+# Monitoring & observability
+monitoring:
+  log_level: "INFO"           # DEBUG | INFO | WARNING | ERROR
+  log_file: "~/.trading_bot/logs/bot-%Y-%m-%d.log"
+  log_rotation: "daily"
+  log_retention_days: 30
+  log_json: true              # Structured JSON logs
+
+  metrics:
+    enabled: true
+    port: 9090
+    path: "/metrics"
+
+  health:
+    enabled: true
+    port: 8080
+    live_path: "/health/live"
+    ready_path: "/health/ready"
+
+  sentry:
+    dsn: "${SENTRY_DSN}"       # Optional: error tracking
+    environment: "production"
+    traces_sample_rate: 0.1
+
+  alerts:
+    telegram:
+      enabled: true
+      bot_token: "${TELEGRAM_BOT_TOKEN}"
+      chat_id: "${TELEGRAM_CHAT_ID}"
+      level: "WARNING"        # Minimum severity: INFO, WARNING, CRITICAL
+    slack:
+      enabled: false
+      webhook: "${SLACK_WEBHOOK}"
+
+# Backtesting (offline mode — not used in live)
+backtest:
+  enabled: false              # Set true for backtest runs
+  data_source: "csv"          # "csv" | "polymarket_api"
+  initial_capital: 50000
+  commission_bps: 20          # 0.2% per trade
+  slippage_bps: 5             # 0.05% average slippage
+  latency_ms: 100             # Simulated order latency
+
+# Environment-specific overrides (optional)
+# environments:
+#   production:
+#     trading.assets.BTC.enabled: true
+#     risk.max_position_size_usd: 5000
+#   staging:
+#     app.dry_run: true
+#     trading.assets.BTC.max_position_usd: 100

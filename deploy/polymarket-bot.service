@@ -1,0 +1,27 @@
+[Unit]
+Description=Polymarket Markov Trading Bot
+After=network-online.target local-fs.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/trading_bot
+Environment="PYTHONPATH=/opt/trading_bot"
+# Private key for live trading (only set when going live)
+# Environment="POLYMARKET_PRIVATE_KEY=${POLYMARKET_PRIVATE_KEY}"
+ExecStart=/opt/trading_bot/.venv/bin/python -m polymarket_bot --config /opt/trading_bot/config/config.yaml
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=polymarket-bot
+# Security hardening (conservative)
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/trading_bot/logs /opt/trading_bot/config /opt/trading_bot/data
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,243 @@
+
+================================================================================
+POSTUP ZRUŠENIA SPOLOČNOSTI s.r.o. – SLOVENSKÁ REPUBLIKA
+Plný právny základ, možnosti a náklady (2025/2026)
+================================================================================
+
+1. PRÁVNY RÁMEC
+================================================================================
+Hlavný zákon: Obchodný zákonník – zákon č. 513/1991 Zb. v znení neskorších
+predpisov.
+
+Kľúčový článok: § 153 Obchodného zákonníka – Zrušenie spoločnosti
+
+Text §153 (暂行 prehľad):
+   (1) Spoločnosť sa zruší:
+        a) rozhodnutím vlastníka, ak je spoločnosť založená jediným vlastníkom
+           a nepochádza dôvod na vyhlásenie likvidácie,
+        b) rozhodnutím zborného zasadnutia, ak je spoločnosť založená viacerými
+           spoločníkmi a nepochádza dôvod na vyhlásenie likvidácie,
+        c) po ukončení likvidácie,
+        d) z iných právnych dôvodov.
+
+   (2) Rozhodnutie o zrušení spoločnosti prijme vlastník alebo zborné zasadnutie
+   spoločníkov. Pri rozhodnutí o zrušení spoločnosti sa zároveň rozhodne o
+   spôsobe likvidácie.
+
+   (3) Ak po ňom dôvodu na zrušenie spoločnosti, likvidácia sa vyhlási vždy.
+
+Súvisiace ustanovenia:
+  § 152a – Založenie spoločnosti (minimálne 2 spoločníci)
+  § 152b – Jediný spoločník (možnosť prevzatia podniku)
+  § 154  – Likvidácia (postup ak sú aktíva/záväzky)
+  § 155  – Zrušenie spoločnosti bez likvidácie
+  § 161b – Vstup do registra o likvidácii
+
+2. MOŽNOSTI ZRUŠENIA – KEDY KTORÁ PLATÍ
+================================================================================
+
+┌─────────────────────┬────────────────────────────────────────────────────┐
+│ Situácia            │ Postup                                            │
+├─────────────────────┼────────────────────────────────────────────────────┤
+│ Žiadne aktíva, žiadne│ **Zrušenie bez likvidácie** (§155)                │
+│ záväzky, spoločnosť │ – Rozhodnutie vlastníka/zborného zasadnutia      │
+│ nečinná, žiadni     │ – Podanie návrhu na zápis zrušenia do ORSR        │
+│ dlžníci              │ – Žiadne pravidlá likvidácie                      │
+│                     │ – Náklady: 150 € poplatok                           │
+├─────────────────────┼────────────────────────────────────────────────────┤
+│ Spoločnosť má aktíva │ **Likvidácia** (§153 c, §154)                     │
+│ a/alebo záväzky     │ – Vyhlásenie likvidácie                            │
+│                     │ – Menovanie likvidátora                            │
+│                     │ – Konečné zúčtovanie (6-mesačné lehoty)            │
+│                     │ – Podanie záveru likvidácie do ORSR               │
+│                     │ – Náklady: 550 € poplatok + 2×27 € reklama       │
+├─────────────────────┼────────────────────────────────────────────────────┤
+│ Nedostatočný vklad  │ **Likvidácia povinná**                            │
+│ (základné imanie <   │ – Povisť správcu alebo nájomníka                   │
+│ 25 000 €)           │ – Reštrikturalizácia alebo konkurz                 │
+├─────────────────────┼────────────────────────────────────────────────────┤
+│ Porušenie zákona    │ **Súdne právomoc**                                 │
+│ (napr. fraud)       │ – Ministerstvo spravodlivosti podá návrh          │
+│                     │ – Súd rozhodne o zrušení bez vyhlásenia likvidácie│
+└─────────────────────┴────────────────────────────────────────────────────┘
+
+Kedy možno zrušiť BEZ likvidácie:
+  – Ak spoločnosť nemá žiadne záväzky a neposkytuje žiadne služby.
+  – Ak nie je nevyhnutné pracovať s aktívami/debt claims.
+  – Ak spoločnosť predkladá potvrdenia od všetkých veritelných, že nie sú
+    požiadavky.
+
+Kedy je POVINNÁ likvidácia:
+  – Ak spoločnosť má nevyrovnané záväzky k dodávateľom, zamestnancom, DPH.
+  – Ak spoločnosť vykazuje straty a má aktíva (nemôžu byť jednoducho odpis).
+  – Vždy ak je zrušená po upozornení právnym predpisom.
+
+3. DÔVODY ZRUŠENIA PODĽA §153
+================================================================================
+  a) Rozhodnutím vlastníka (jediný vlastník) – jednoduché, rýchle.
+  b) Rozhodnutím zborného zasadnutia (viacerí spoločníci) – potrebný súhlas.
+  c) Ukončením likvidácie – po triednom dokončení.
+  d) Iné právne dôvody – napr. zánik právneho zdola, neoprávnené používanie.
+
+4. PRÁVNE POSTUPY – KROK PRI KROKU
+================================================================================
+
+A) ZRUŠENIE BEZ LIKVIDÁCIE (jednoduché)
+---------------------------------------
+  1. **Rozhodnutie vlastníka/zborného zasadnutia**
+     – Jediný vlastník: písomné vyhlásenie.
+     – Viacerí spoločníci: zborné zasadnutie, zápis do záznamu.
+
+  2. **Pripomienky k OR**
+     – V súlade s §156a Obchodného zákonníka je potrebné:
+        * Informovať orgán obchodného registra o rozhodnutí.
+        * Prikladať dokumentáciu (rozhodnutie, listina).
+
+  3. **Podanie návrhu do ORSR**
+     – Formulár: "Návrh na zápis zrušenia spoločnosti s r.o." (bez likvidácie)
+     – Prostredníctvom: sluzby.orsr.sk (elektronicky)
+     – Prílohy:
+        * Rozhodnutie o zrušení (originál alebo notársky overená kópia)
+        * Zoznam spoločníkov (ak je relevantné)
+        * Potvrdenie, že spoločnosť nemá záväzky (nie je požadované, ale odporúčané)
+
+  4. **Vykonanie zápisu**
+     – Registrový súd (Mestský súd Bratislava III pre ASCENTIA) overí.
+     – Zápis do Obchodného registra (~5 pracovných dní).
+     – Vyskúšanie zrušenia: spoločnosť prestáva existovať ako právnická osoba.
+
+  5. **Uplynutie vypršania**
+     – Spoločnosť zanikne pri uverejnení v OR.
+     – Uplynie 3 mesiace pre uplatnenie nárokov.
+
+B) LIKVIDÁCIA (obmedzená)
+-------------------------
+  1. **Rozhodnutie o likvidácii**
+     – Vždy potrebné ak spoločnosť má aktíva/záväzky.
+     – Vlastníci rozhodnú po uplatnení zrušenia.
+
+  2. **Menovanie likvidátora**
+     – Zo spoločníkov (vyberie sa dočasný správcu).
+     – Možné menovať externého likvidátora (advokát, auditor).
+
+  3. **Zverejnenie v Obchodnom vestníku**
+     – Uverejnenie vyhlásenia o začatí likvidácie.
+     – Náklady: 2× 27 EUR (iROZHLAS + Nový Čas alebo podobný).
+     – Adresáti: veriti, zamestnanci, dodávatelia.
+
+  4. **Zozbieranie aktív a vypožičanie**
+     – Likvidátor uplynie pohľadávky, vyberie peňažné prostriedky.
+     – Vyrovnáni záväzkov podľa priority.
+
+  5. **Záver likvidácie**
+     – Súhrnný predpis.
+     – Založiť dokumentáciu.
+
+  6. **Podanie závěru do ORSR**
+     – Formulár: "Návrh na zápis ukončenia likvidácie a zrušenia spoločnosti".
+     – Priklada sa záver likvidácie, vyhlásenie o rozdelení zisku, výpis z registra.
+
+  7. **Zápis do ORSR**
+     – Súd schváli, spoločnosť je registrovaná ako zrušená.
+     – Trvanie: ~2–4 mesiace.
+
+5. POPLATKY A NÁKLADY (2025/2026)
+================================================================================
+Aktuálne sadzby podľa vyhlášky MK SR č. 100/2001 Z.z. o súdnych poplatkoch
+v znení neskorších predpisov (aktualizácia 2024/2025):
+
+┌────────────────────────────────────────────────────────────────────────┐
+│ Poplatok za zápis do ORSR                                              │
+├────────────────────────────────────────────────────────────────────────┤
+│ Zrušenie spoločnosti BEZ likvidácie                                    │
+│   – Podanie návrhu spoločnosti/r.o. (jednoduchý zápis)                │
+│   – Štátny poplatok:             **150 EUR**                            │
+│                                                                         │
+│ Zrušenie s likvidáciou                                                 │
+│   – Začatie konania o likvidácii                                       │
+│   – Štátny poplatok:             **550 EUR**                            │
+│                                                                         │
+│ Riadne technické                                                 │
+│   – Priložené dodatky (page per page)     10 EUR za stranu    │
+│                                                                         │
+│ Advertising / zverejnenie v Obchodnom vestníku                         │
+│   – Vyhlásenie v iROZHLAS (elektronický vestník)       27 EUR         │
+│   – Vyhlásenie v Nový Čas (tlačový vestník)          27 EUR         │
+│   – Spolu za 2× uverejnenie:                    **54 EUR**            │
+│                                                                         │
+│ Notárské overenie (ak potrebné)                                        │
+│   – Overenie podpisu na rozhodnutí                30–100 EUR          │
+│   – Overenie spoločenskej zmluvy (ak sa mení)       50–150 EUR        │
+│                                                                         │
+│ Advokát / právnická služba (voliteľné)                                 │
+│   – Príprava dokumentácie, konzultácia         300–800 EUR          │
+│   – Úplná likvidácia (plná služba)             1 000–3 000 EUR      │
+└────────────────────────────────────────────────────────────────────────┘
+
+CELKOVÉ NÁKLADY (odhady):
+  – Zrušenie BEZ likvidácie:       150–250 EUR (pouze poplatok + reklama)
+  – Zrušenie s likvidáciou:       550–800 EUR (poplatok + reklama + notár)
+  – Plná outsourcing likvidácie: 1 500–4 000 EUR (advokát, celá správa)
+
+6. VYHLÁŠKY A ZÁKONY – KDE NÁJSŤ
+================================================================================
+  • Obchodný zákonník (513/1991 Z.z.): https://www.slov-lex.sk/pravne-predpisy/SK/ZZ/1991/513
+  • Vyhláška MK SR č. 100/2001 Z.z. (súdne poplatky): https://www.slov-lex.sk/pravne-predpisy/SK/Vyhlaska/2001/100
+  • Obchodný register (orsr.sk): https://www.orsr.sk/
+  • Ministerstvo spravodlivosti SR – návody: https://www.justice.gov.sk/sluzby/obchodny-register/
+
+7. FORMULÁRE A DOKUMENTY
+================================================================================
+Dostupné na:
+  – https://sluzby.orsr.sk/VzoryFormulare  (oficiálne ORSR formuláre)
+  – https://www.justice.gov.sk/sluzby/vzory-a-formulare/vzory-pre-fo-a-po/
+
+Kľúčové dokumenty:
+  1. Návrh na zápis rozhodnutia o zrušení spoločnosti (bez likvidácie)
+  2. Vyhlásenie likvidátora (pri likvidácii)
+  3. Zápis z zborného zasadnutia (ak relevantné)
+  4. Overené rozhodnutie (notársky potvrdené)
+
+8. ČASOVÝ RAMEC
+================================================================================
+  – Zrušenie BEZ likvidácie:     2–4 týždňov (od podania do ORSR)
+  – Likvidácia (úloha):          6–12 mesiacov (podľa zložitosti)
+  – Súdne zrušenie (exekučné):  几个月 až rok (podľa dôvodu)
+
+9. DÔLEŽITÉ OZNÁMENIA
+================================================================================
+  • Spoločnosť musí vykonať uverejnenie v Obchodnom vestníku PRED zápisom.
+  • Ak spoločnosť udržiava zamestnancov, musia byť vypočítané odstupné.
+  • DPH a daňové povinnosti musia byť vyriešené pred zrušením.
+  • SPRÁVA PARITECKU: likvidátor musí podať zverejnenie do ORSR do 30 dní
+    od ukončenia.
+  • Zrušená spoločnosť zanecháva archivné záznamy na 10 rokov (daňové).
+
+================================================================================
+PRÍKLAD PRE ASCENTIA s.r.o. (IČO: 51858959)
+================================================================================
+
+Podľa analýzy:
+  – Základné imanie: 5 000 € (nízko, ale uspokojivé)
+  – Aktíva: 27 618 € (finančné aktíva)
+  – Zaväzky: 30 327 € (negatívny kapitál)
+  – DPH: neznáme, potrebná kontrola
+
+Doporučenie:
+  1. Kontrola DPH (FinStat.ukazatele, daňový poradca)
+  2. Kontrola zákonov pracovného práva (ak zamestnanci)
+  3. Finančné vyrovnanie s veriteli pred zrušením
+  4. Ak zrušenie bez likevidácie (žiadne činnosti), odporúča sa:
+     – Rýchle rozhodnutie vlastníka (Marián Stančík)
+     – Podanie do ORSR cez sluzby.orsr.sk
+     – Náklady: ~200 EUR celkom (poplatok + reklama)
+
+Ak by chcete, môžem pomôcť pripraviť oficiálny dokument:
+  – Rozhodnutie o zrušení (šablóna)
+  – Elektronické podanie cez ORSR
+  – Kópiu všetkých potrebných formulárov.
+
+-------------------------------------------------------------------------------
+Aktualizácia: 19.04.2026 | Zdroje: Obchodný zákonník 513/1991 Z.z., MK SR vyhláška
+č. 100/2001 Z.z. o súdnych poplatkoch, ORSR.gov.sk, Justice.gov.sk
+-------------------------------------------------------------------------------

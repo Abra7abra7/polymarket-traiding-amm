@@ -1,0 +1,5 @@
+exit_timestamp,order_id,asset,window,entry_price,exit_price,shares,pnl_usd,pnl_pct,exit_reason,p_hat_at_entry,kelly_fraction
+Apr 21 19:43:28,dryrun-buy-000136,ETH,5m,,0.5868,,43.18,,take_profit_3pct,,
+Apr 21 19:43:29,dryrun-buy-000148,BTC,5m,,0.6653,,55.51,,take_profit_3pct,,
+Apr 21 19:44:29,dryrun-buy-000149,ETH,5m,,0.5657,,-21.95,,trailing_stop_2pct,,
+Apr 21 19:45:29,dryrun-buy-000150,LON_RAIN,1h,,0.5136,,18.79,,take_profit_3pct,,

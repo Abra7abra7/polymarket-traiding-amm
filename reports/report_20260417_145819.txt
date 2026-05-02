@@ -1,0 +1,60 @@
+======================================================================
+  POLYMARKET MARKOV TRADING BOT — 24H REPORT
+======================================================================
+  Generated: 2026-04-17T14:58:19.337117
+  Bot mode: DRY-RUN (paper trading)
+
+── RECENT LOG (last 300 lines)
+----------------------------------------------------------------------
+/opt/trading_bot/polymarket_bot/__main__.py:81: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.13/migration/
+  self.logger.info("Bot initializing...", config=self.config.app.dict())
+{"config": {"name": "polymarket-markov-bot", "version": "1.0.0", "environment": "development", "dry_run": true}, "event": "Bot initializing...", "level": "info", "timestamp": "2026-04-17T14:53:31.903459Z"}
+Loading config from config/config.yaml...
+[RUN] Starting bot run
+[RUN] Initializing...
+{"event": "Initializing exchange connection...", "level": "info", "timestamp": "2026-04-17T14:53:31.904097Z"}
+{"event": "Markets loaded: 2", "level": "info", "timestamp": "2026-04-17T14:53:32.004704Z"}
+{"event": "Initialized matrix: BTC:5m (window_size=5, n_states=100)", "level": "info", "timestamp": "2026-04-17T14:53:32.005141Z"}
+{"event": "Initialized matrix: BTC:1h (window_size=60, n_states=100)", "level": "info", "timestamp": "2026-04-17T14:53:32.005384Z"}
+{"event": "Asset ETH disabled, skipping", "level": "info", "timestamp": "2026-04-17T14:53:32.005476Z"}
+{"event": "Initialized 2 trading matrices", "level": "info", "timestamp": "2026-04-17T14:53:32.005543Z"}
+{"event": "Metrics exporter on port 9090", "level": "info", "timestamp": "2026-04-17T14:53:32.006560Z"}
+{"event": "Health server on port 8080", "level": "info", "timestamp": "2026-04-17T14:53:32.007361Z"}
+{"event": "Starting portfolio = $50,000.00", "level": "info", "timestamp": "2026-04-17T14:53:32.007457Z"}
+{"portfolio": 50000.0, "event": "\u2705 Initialization complete", "level": "info", "timestamp": "2026-04-17T14:53:32.007539Z"}
+[Exchange] Connected to Polymarket (mock mode)
+[RUN] Initialized, running=True
+{"dry_run": true, "event": "\ud83d\ude80 Bot starting evaluation loop...", "level": "info", "timestamp": "2026-04-17T14:53:32.007669Z"}
+[EVAL] Loop iteration start
+[EVAL] Running gather for 2 tasks
+[EVAL] start BTC:5m
+[EVAL] start BTC:1h
+[EVAL] Gather completed, results count=2
+[EVAL] Metrics updated
+[EVAL] About to sleep/wait (sleep_time=60.00)
+[DEBUG] _shutdown_future id=139134575830656 done=False
+[DEBUG] created sleep_task 139134575408896
+{"signal": 2, "event": "Signal received", "level": "warning", "timestamp": "2026-04-17T14:54:31.376546Z"}
+[SIGNAL] Received signal 2 at 1776437671.3768528
+[SIGNAL] _shutdown_future id=139134575830656 done=False
+[SIGNAL] set_result called
+[DEBUG] wait returned: done=[139134575830656] pending=[139134575408896]
+[EVAL] After sleep/wait block
+[EVAL] Loop iteration complete, running=False
+[RUN] evaluation_loop returned
+[RUN] Entering finally, calling shutdown
+[SHUTDOWN] Starting...
+{"event": "Shutting down...", "level": "info", "timestamp": "2026-04-17T14:54:32.009879Z"}
+[SHUTDOWN] Disconnecting client...
+[SHUTDOWN] Client disconnected
+[SHUTDOWN] Stopping metrics...
+[SHUTDOWN] Metrics stopped
+[SHUTDOWN] Stopping health server...
+[SHUTDOWN] Health server stopped
+{"trades": 0, "runtime": "0:01:00.072824", "event": "Shutdown complete", "level": "info", "timestamp": "2026-04-17T14:54:32.080396Z"}
+👋 Bot stopped
+[RUN] Shutdown complete
+
+======================================================================
+  END OF REPORT
+======================================================================

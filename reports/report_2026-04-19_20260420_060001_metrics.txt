@@ -1,0 +1,29 @@
+# HELP trading_bot_portfolio_value_usd Current total portfolio value in USD
+# TYPE trading_bot_portfolio_value_usd gauge
+trading_bot_portfolio_value_usd 50000.0
+# HELP trading_bot_open_positions_count Number of currently open positions
+# TYPE trading_bot_open_positions_count gauge
+trading_bot_open_positions_count 5.0
+# HELP trading_bot_trades_total Total number of trades executed
+# TYPE trading_bot_trades_total counter
+trading_bot_trades_total{asset="ETH",outcome="YES",window="1h"} 3.0
+trading_bot_trades_total{asset="VIE_RAIN",outcome="YES",window="1h"} 2.0
+# HELP trading_bot_trades_created Total number of trades executed
+# TYPE trading_bot_trades_created gauge
+trading_bot_trades_created{asset="ETH",outcome="YES",window="1h"} 1.776620772048316e+09
+trading_bot_trades_created{asset="VIE_RAIN",outcome="YES",window="1h"} 1.7766207720740054e+09
+# HELP trading_bot_p_hat Model-estimated probability for last trade
+# TYPE trading_bot_p_hat gauge
+# HELP trading_bot_gap Observed gap between p_hat and market price
+# TYPE trading_bot_gap gauge
+# HELP trading_bot_errors_total Total number of errors encountered
+# TYPE trading_bot_errors_total counter
+# HELP trading_bot_matrix_transitions_total Total number of state transitions recorded in the Markov matrix
+# TYPE trading_bot_matrix_transitions_total gauge
+trading_bot_matrix_transitions_total 14.0
+# HELP trading_bot_matrix_valid Whether the transition matrix is currently valid (1) or not (0)
+# TYPE trading_bot_matrix_valid gauge
+trading_bot_matrix_valid 1.0
+# HELP trading_bot_matrix_diagonal_mean Mean value of diagonal elements in the transition matrix
+# TYPE trading_bot_matrix_diagonal_mean gauge
+trading_bot_matrix_diagonal_mean 0.04166775527941684

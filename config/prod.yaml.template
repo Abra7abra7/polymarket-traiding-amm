@@ -1,0 +1,66 @@
+# Production config — fill in your real Polymarket API credentials
+# Copy this file to config/prod.yaml and fill values. DO NOT commit prod.yaml.
+# Required env vars are listed in deploy_live.sh
+
+app:
+  name: polymarket-live-bot
+  environment: production
+  dry_run: false   # ← CHANGE TO FALSE FOR LIVE TRADING
+
+exchange:
+  platform: polymarket
+  api:
+    base_url: https://api.polymarket.com
+    ws_url: wss://api.polymarket.com/market/v1
+    timeout: 10
+    max_retries: 3
+    backoff_factor: 2.0
+  auth:
+    method: api_key
+  wallet:
+    address: "${POLYMARKET_WALLET_ADDRESS}"   # filled from env
+    # private_key is optional — use if signing locally
+
+trading:
+  assets:
+    BTC:
+      symbol: BTC
+      # Replace with actual Polymarket market contract address:
+      market_id: "0x..."-placeholder
+      windows: ["1h", "6h"]
+      enabled: true
+      max_position_usd: 30
+    ETH:
+      symbol: ETH
+      market_id: "0x..."
+      windows: ["1h", "6h"]
+      enabled: true
+      max_position_usd: 30
+  # Add TAO, HL as needed after you obtain their market IDs
+
+  allowed_windows: ["1h", "6h"]
+  min_confidence: 0.55          # p_hat >= this to enter
+  stop_loss_usd: 5
+  take_profit_usd: 7.5
+  max_positions: 4
+  max_total_exposure_usd: 120
+  position_sizing:
+    method: kelly
+    fraction: 0.25
+
+risk:
+  max_daily_loss_usd: 15
+  max_drawdown_pct: 10
+  max_positions_per_asset: 2
+  circuit_breaker:
+    enabled: true
+    unrealized_loss_threshold_usd: 20
+    flat_after_minutes: 5
+
+portfolio:
+  initial_capital: 300
+
+monitoring:
+  log_level: INFO
+  checkpoint_interval_seconds: 60
+  health_check_interval_seconds: 30

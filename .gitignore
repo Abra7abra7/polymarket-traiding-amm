@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+.venv/
+venv/
+env/
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backups & temp
+backups/
+*.backup*
+
+# Environment
+.env
+.env.local
+.env.*.local
+.venv
+venv
+env
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# Distribution
+build/
+dist/
+*.egg-info/
+scratch/
+.gemini/
+.trading_bot/

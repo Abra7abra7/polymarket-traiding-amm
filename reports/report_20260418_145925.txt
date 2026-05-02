@@ -1,0 +1,17 @@
+======================================================================
+  POLYMARKET MARKOV TRADING BOT — 24H REPORT
+======================================================================
+  Generated: 2026-04-18T14:59:25.127849
+  Bot mode: DRY-RUN (paper trading)
+
+── PROMETHEUS METRICS
+  Open Positions Count     : 0.00
+  Portfolio Value Usd      : 50,000.00
+
+── RECENT LOG (last 300 lines)
+----------------------------------------------------------------------
+Log unavailable: [Errno 2] No such file or directory: '/tmp/trading_bot_24h.log'
+
+======================================================================
+  END OF REPORT
+======================================================================

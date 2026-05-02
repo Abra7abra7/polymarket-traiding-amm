@@ -1,0 +1,5 @@
+order_id,asset,window,entry_price,current_price,shares,unrealized_pnl,unrealized_pct,hold_time_hours
+dryrun-buy-000004,BTC,5m,0.6316,0.6316,1583,0.0,0.0,0.0
+dryrun-buy-000005,ETH,5m,0.5973,0.5973,1674,0.0,0.0,0.0
+dryrun-buy-000006,ETH,6h,0.5778,0.5778,1730,0.0,0.0,0.0
+dryrun-buy-000173,VIE_RAIN,1h,0.5102,0.4824,588,-16.35,-5.45,0.03

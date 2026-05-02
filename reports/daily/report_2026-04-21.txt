@@ -1,0 +1,40 @@
+📈 **TRADING BOT — DAILY REPORT**
+📅 2026-04-21 21:15 (CEST)
+
+💰 **Portfolio:** $50,164.62
+   Start capital: $50,000.00
+   Total P&L: $+164.62 (+0.33%)
+
+📊 **Positions:** 5 open | 0 closed (today)
+
+**🔵 OPEN POSITIONS**
+  • `dryrun-buy-000002` — ETH (1h)
+    Entry: $0.5831 | Curr: $0.5727
+    P&L: $-17.83 (-1.78%) | Hold: 7.0h
+  • `dryrun-buy-000005` — ETH (1h)
+    Entry: $0.5736 | Curr: $0.5824
+    P&L: $+15.34 (+1.53%) | Hold: 7.0h
+  • `dryrun-buy-000007` — ETH (1h)
+    Entry: $0.5881 | Curr: $0.5887
+    P&L: $+1.02 (+0.10%) | Hold: 6.9h
+  • `dryrun-buy-000015` — ETH (1h)
+    Entry: $0.5755 | Curr: $0.5838
+    P&L: $+14.42 (+1.44%) | Hold: 3.3h
+  • `dryrun-buy-000017` — ETH (1h)
+    Entry: $0.5836 | Curr: $0.5973
+    P&L: $+23.47 (+2.35%) | Hold: 1.4h
+  *Total unrealized: $+36.42*
+
+**🔬 MATRIX HEALTH**
+  Active: 10 | Valid: 8
+  Avg diag: 0.0000
+
+**⚙️ CONFIGURED ASSETS**
+  ✅ `BTC` — windows: 5m
+  ✅ `ETH` — windows: 5m, 1h, 6h
+  ✅ `LON_RAIN` — windows: 1h, 6h
+  ✅ `VIE_RAIN` — windows: 1h, 6h
+  ✅ `PRG_RAIN` — windows: 1h, 6h
+
+---
+Report generated: 2026-04-21 19:15 UTC
