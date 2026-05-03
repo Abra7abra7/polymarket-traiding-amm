@@ -307,5 +307,5 @@ trading:
     min_probability: 0.01
     p_hat_entry: 0.55
     p_hat_exit: 0.45
-    tau: 0.10
+    tau: 0.05
     trailing_stop_pct: 0.02

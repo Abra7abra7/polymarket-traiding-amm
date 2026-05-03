@@ -94,10 +94,13 @@ class TradingBot:
 
         # Portfolio state - set initial value based on mode
         if self.config.app.paper_trading:
-            self.portfolio_value = self.config.paper_trading.initial_balance
+            self.initial_balance = self.config.paper_trading.initial_balance
+            self.portfolio_value = self.initial_balance
         elif self.config.app.dry_run:
-            self.portfolio_value = self.config.backtest.initial_capital
+            self.initial_balance = self.config.backtest.initial_capital
+            self.portfolio_value = self.initial_balance
         else:
+            self.initial_balance = 0.0
             self.portfolio_value = 0.0  # Will be fetched from exchange
 
         # Control flags
@@ -159,6 +162,23 @@ class TradingBot:
             else:
                 default_balance = self.config.backtest.initial_capital
             self.portfolio_value = data.get('portfolio_value', default_balance)
+            
+            # Restore daily trade counter
+            self.daily_trades_count = data.get('daily_trades_count', 0)
+            saved_date_str = data.get('last_trade_date', '')
+            if saved_date_str:
+                from datetime import date
+                try:
+                    self.last_trade_date = date.fromisoformat(saved_date_str)
+                    # Reset if saved date is not today
+                    if self.last_trade_date != datetime.now(timezone.utc).date():
+                        self.logger.info(f"New day detected, resetting trade counter (saved: {saved_date_str})")
+                        self.daily_trades_count = 0
+                        self.last_trade_date = datetime.now(timezone.utc).date()
+                except ValueError:
+                    self.last_trade_date = datetime.now(timezone.utc).date()
+            else:
+                self.last_trade_date = datetime.now(timezone.utc).date()
 
             # Restore stats (merge with defaults)
             saved_stats = data.get('stats', {})
@@ -203,6 +223,8 @@ class TradingBot:
             'positions': self.positions,
             'portfolio_value': self.portfolio_value,
             'stats': self.stats,
+            'daily_trades_count': self.daily_trades_count,
+            'last_trade_date': self.last_trade_date.isoformat() if hasattr(self.last_trade_date, 'isoformat') else str(self.last_trade_date),
             'matrices': {key: matrix.to_dict() for key, matrix in self.matrices.items()}
         }
 
@@ -218,10 +240,12 @@ class TradingBot:
             if self.config.app.paper_trading and hasattr(self.client, "get_position_summary"):
                 try:
                     summary = self.client.get_position_summary()
-                    self.metrics.record_paper_pnl(
-                        summary.get("unrealized_pnl", 0.0),
-                        summary.get("current_balance", 0.0)
-                    )
+                    # P&L = current portfolio value - initial balance ($5000)
+                    # This shows ACTUAL current P&L vs initial, not historical cumulative
+                    total_balance = summary.get("total_balance", summary.get("current_balance", 0.0))
+                    current_pnl = total_balance - self.initial_balance
+                    unrealized = summary.get("unrealized_pnl", 0.0)
+                    self.metrics.record_paper_pnl(current_pnl, unrealized)
                     self.metrics.record_paper_positions(summary.get("open_positions", 0))
                     if hasattr(self.client, "get_fill_rate"):
                         self.metrics.record_paper_fill_rate(self.client.get_fill_rate())
@@ -281,6 +305,7 @@ class TradingBot:
         print("[EXIT] Checking exits for open positions...", flush=True)
         now = datetime.now(timezone.utc)
         to_close = []
+        force_timeout_hours = 4  # Force exit after 4 hours
 
         for order_id, pos in list(self.positions.items()):
             try:
@@ -290,6 +315,27 @@ class TradingBot:
                 if not asset_cfg:
                     self.logger.warning("Unknown asset in position", asset=asset, order_id=order_id)
                     continue
+                
+                # Safely parse entry_time (could be string or datetime from checkpoint)
+                entry_time_raw = pos['entry_time']
+                if isinstance(entry_time_raw, str):
+                    entry_dt = datetime.fromisoformat(entry_time_raw).replace(tzinfo=timezone.utc)
+                elif isinstance(entry_time_raw, datetime):
+                    entry_dt = entry_time_raw
+                    if entry_dt.tzinfo is None:
+                        entry_dt = entry_dt.replace(tzinfo=timezone.utc)
+                else:
+                    self.logger.error("Invalid entry_time format", order_id=order_id, type=type(entry_time_raw))
+                    continue
+                
+                # Force exit if position is too old
+                now_utc = now if now.tzinfo else now.replace(tzinfo=timezone.utc)
+                hours_open = (now_utc - entry_dt).total_seconds() / 3600
+                force_exit = hours_open >= force_timeout_hours
+                
+                if force_exit:
+                    self.logger.warning(f"Force exit: position open for {hours_open:.1f}h >= {force_timeout_hours}h", 
+                                      order_id=order_id, asset=asset)
 
                 # Get current price
                 # Build correct market_id format: for weather assets, append window (e.g. LON_RAIN -> LON_RAIN_1H)
@@ -303,8 +349,9 @@ class TradingBot:
 
                 # Compute remaining time to expiry
                 total_days = self._window_duration_days(window)
-                entry_dt = datetime.fromisoformat(pos['entry_time']).replace(tzinfo=timezone.utc)
-                elapsed_days = (now - entry_dt).total_seconds() / 86400
+                # entry_dt already parsed above, reuse it
+                now_utc = now if now.tzinfo else now.replace(tzinfo=timezone.utc)
+                elapsed_days = (now_utc - entry_dt).total_seconds() / 86400
                 remaining_days = max(0.01, total_days - elapsed_days)
 
                 sigma = self._get_market_volatility(asset)
@@ -318,8 +365,12 @@ class TradingBot:
                     days_to_expiry=int(remaining_days),
                     sigma=sigma
                 )
+                
+                # Force exit if position is too old OR Bellman says exit
+                should_exit = exit_info['exit'] or force_exit
+                exit_reason = exit_info.get('reason', 'bellman') if not force_exit else f'force_timeout_{hours_open:.1f}h'
 
-                if exit_info['exit']:
+                if should_exit:
                     # Check daily trade limit before placing sell order
                     if not self._check_daily_trade_limit():
                         self.logger.warning("Skipping sell - daily limit reached",
@@ -347,9 +398,9 @@ class TradingBot:
                         self.stats['trades_settled'] += 1
                         self._increment_daily_trades()
                         to_close.append(order_id)
-                        self.logger.info("Position closed (Bellman exit)",
+                        self.logger.info("Position closed",
                                          order_id=order_id, asset=asset, window=window,
-                                         price=current_price, pnl=pnl, reason=exit_info['reason'])
+                                         price=current_price, pnl=pnl, reason=exit_reason)
                 else:
                     # Optional: log threshold info at debug
                     self.logger.debug("Hold position", order_id=order_id,
@@ -746,6 +797,21 @@ class TradingBot:
         while self.running:
             print("[EVAL] Loop iteration start", flush=True)
             loop_start = asyncio.get_event_loop().time()
+            
+            # Safety check: if portfolio value dropped below 50% of initial, stop trading
+            initial_balance = self.config.paper_trading.initial_balance if self.config.app.paper_trading else self.config.backtest.initial_capital
+            if self.portfolio_value < initial_balance * 0.5:
+                self.logger.error(f"EMERGENCY STOP: Portfolio value ${self.portfolio_value:.2f} < 50% of initial ${initial_balance:.2f}")
+                self.running = False
+                break
+            
+            # Also check paper trading balance
+            if self.config.app.paper_trading and hasattr(self.client, 'get_balance'):
+                current_balance = await self.client.get_balance()
+                if current_balance < initial_balance * 0.3:  # Stop if less than 30% left
+                    self.logger.error(f"EMERGENCY STOP: Paper balance ${current_balance:.2f} < 30% of initial")
+                    self.running = False
+                    break
 
             # Sync portfolio value with paper trading total equity (net of fees)
             if hasattr(self.client, 'get_total_equity'):

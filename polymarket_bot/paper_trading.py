@@ -210,8 +210,29 @@ class PaperTradingEngine(BaseExchangeClient):
         return self.current_balance
 
     async def buy(self, market_id: str, outcome_id: int = 0, price: Optional[float] = None, amount: int = 1, order_type: str = "limit") -> Optional[Dict]:
-        """Simulate buy — creates/augments long position."""
-        size_usd = price * amount if price else 100  # default notional
+        """Simulate buy — creates/augments long position.
+        
+        Args:
+            amount: Number of shares to buy (not dollar amount!)
+        """
+        if not price or price <= 0:
+            logger.info(f"[PAPER] BUY rejected: invalid price {price}")
+            return None
+        
+        # amount = number of shares to buy
+        shares_to_buy = amount
+        size_usd = price * shares_to_buy  # dollar cost
+        
+        # Check if we have enough balance
+        fee_rate = self.swap_fee_bps / 10000
+        fee = size_usd * fee_rate
+        gas = self.gas_fee_usd
+        total_cost = size_usd + fee + gas
+        
+        if total_cost > self.current_balance:
+            logger.info(f"[PAPER] BUY rejected: insufficient balance ${self.current_balance:.2f} < ${total_cost:.2f}")
+            return None
+        
         result = self._simulate_fill({"side": "buy", "price": price, "size": size_usd})
         self.total_orders += 1
         if result["filled"]:
@@ -219,8 +240,9 @@ class PaperTradingEngine(BaseExchangeClient):
         if not result["filled"]:
             logger.info(f"[PAPER] BUY not filled: {market_id} ${size_usd}")
             return None
+        
         fill_price = result["fill_price"]
-        quantity = int(size_usd / fill_price) if fill_price > 0 else 0
+        quantity = shares_to_buy  # Use the actual shares bought, not recalculating
         asset = market_id.split('_')[0]
         pid = f"{asset}:{outcome_id}"
 
@@ -262,7 +284,7 @@ class PaperTradingEngine(BaseExchangeClient):
         })
         logger.info(f"[PAPER] BUY filled: {asset} ${size_usd} @ {fill_price:.4f} (fee=${fee:.2f}, gas=${gas:.2f})")
         self._save_state()
-        return {"filled": True, "price": fill_price, "quantity": quantity, "status": "filled"}
+        return {"filled": True, "price": fill_price, "quantity": quantity, "status": "filled", "order_id": pid}
 
     async def sell(self, market_id: str, outcome_id: int = 0, price: Optional[float] = None, amount: int = 1, order_type: str = "limit") -> Optional[Dict]:
         """Simulate sell — exits long or opens short."""
@@ -282,12 +304,12 @@ class PaperTradingEngine(BaseExchangeClient):
             sell_fee = gross_proceeds * fee_rate
             gas = self.gas_fee_usd
             net_proceeds = gross_proceeds - sell_fee - gas
-
+ 
             # P&L: net proceeds - total cost (including buy fees)
             pnl = net_proceeds - pos.total_cost_usd
             # Update balance: add net proceeds (cost already deducted at buy)
             self.current_balance += net_proceeds
-
+ 
             self.trade_log.append({
                 "time": datetime.utcnow().isoformat(),
                 "asset": asset,
@@ -305,7 +327,7 @@ class PaperTradingEngine(BaseExchangeClient):
             logger.info(f"[PAPER] SELL (exit) filled: {pid} @ {fill_price:.4f} P&L=${pnl:.2f} (fee=${sell_fee:.2f}, gas=${gas:.2f})")
             del self.positions[pid]
             self._save_state()
-            return {"filled": True, "price": fill_price, "pnl": pnl, "status": "filled"}
+            return {"filled": True, "price": fill_price, "pnl": pnl, "status": "filled", "order_id": pid}
         else:
             # Open short
             size_usd = price * amount if price else 100
