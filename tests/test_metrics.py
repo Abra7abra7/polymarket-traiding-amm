@@ -36,76 +36,93 @@ class TestMetricsExporterInit:
         assert "errors" in exporter._metrics
 
 
+@pytest.mark.asyncio
 class TestMetricRecording:
     """Test that metric updates work."""
 
-    def test_portfolio_value_set(self):
+    async def test_portfolio_value_set(self):
         cfg = DummyMonitoringConfig()
+        cfg.metrics_port = 9101
         exporter = MetricsExporter(cfg)
         exporter.portfolio_value(12345.67)
         # Get the underlying Prometheus Gauge value
         gauge = exporter._metrics["portfolio_value"]
         assert gauge._value.get() == 12345.67
+        await exporter.stop()
 
-    def test_open_positions_set(self):
+    async def test_open_positions_set(self):
         cfg = DummyMonitoringConfig()
+        cfg.metrics_port = 9102
         exporter = MetricsExporter(cfg)
         exporter.open_positions(5)
         gauge = exporter._metrics["open_positions"]
         assert gauge._value.get() == 5
+        await exporter.stop()
 
-    def test_trade_counter_inc(self):
+    async def test_trade_counter_inc(self):
         cfg = DummyMonitoringConfig()
+        cfg.metrics_port = 9103
         exporter = MetricsExporter(cfg)
         exporter.record_trade(asset="BTC", window="5m", entry_price=50000, shares=10, p_hat=0.7, persist=0.93)
         counter = exporter._metrics["trades"]
         # Get metric value with labels
         assert counter.labels(asset="BTC", window="5m", outcome="YES")._value.get() == 1
+        await exporter.stop()
 
-    def test_p_hat_gauge_updates(self):
+    async def test_p_hat_gauge_updates(self):
         cfg = DummyMonitoringConfig()
+        cfg.metrics_port = 9104
         exporter = MetricsExporter(cfg)
         exporter.record_p_hat("ETH", "1h", 0.82)
         gauge = exporter._metrics["p_hat"]
         assert gauge.labels(asset="ETH", window="1h")._value.get() == 0.82
+        await exporter.stop()
 
-    def test_gap_gauge_updates(self):
+    async def test_gap_gauge_updates(self):
         cfg = DummyMonitoringConfig()
+        cfg.metrics_port = 9105
         exporter = MetricsExporter(cfg)
         exporter.record_gap("BTC", "5m", 0.07)
         gauge = exporter._metrics["gap"]
         assert gauge.labels(asset="BTC", window="5m")._value.get() == 0.07
+        await exporter.stop()
 
-    def test_error_counter_inc(self):
+    async def test_error_counter_inc(self):
         cfg = DummyMonitoringConfig()
+        cfg.metrics_port = 9106
         exporter = MetricsExporter(cfg)
         exporter.record_error("order_failed")
         counter = exporter._metrics["errors"]
         assert counter.labels(error_type="order_failed")._value.get() == 1
+        await exporter.stop()
 
-    def test_multiple_errors_increment(self):
+    async def test_multiple_errors_increment(self):
         cfg = DummyMonitoringConfig()
+        cfg.metrics_port = 9107
         exporter = MetricsExporter(cfg)
         for _ in range(5):
             exporter.record_error("timeout")
         counter = exporter._metrics["errors"]
         assert counter.labels(error_type="timeout")._value.get() == 5
+        await exporter.stop()
 
 
+@pytest.mark.asyncio
 class TestMetricsHttpEndpoint:
     """Test that /metrics HTTP endpoint serves valid Prometheus format."""
 
-    def test_metrics_endpoint_accessible(self):
+    async def test_metrics_endpoint_accessible(self):
         import urllib.request
         import time
 
         cfg = DummyMonitoringConfig()
+        cfg.metrics_port = 9108
         exporter = MetricsExporter(cfg)
 
         # Wait for server to start
-        time.sleep(0.5)
+        await asyncio.sleep(0.5)
 
-        url = f"http://localhost:{cfg.metrics_port}{cfg.metrics_path}"
+        url = f"http://127.0.0.1:{cfg.metrics_port}{cfg.metrics_path}"
         try:
             with urllib.request.urlopen(url, timeout=3) as resp:
                 body = resp.read().decode()
@@ -114,21 +131,27 @@ class TestMetricsHttpEndpoint:
                 assert "trading_bot_open_positions_count" in body
         except ConnectionRefusedError:
             pytest.fail("Metrics server not listening on port")
+        finally:
+            await exporter.stop()
 
-    def test_metrics_endpoint_shows_labeled_values(self):
+    async def test_metrics_endpoint_shows_labeled_values(self):
         import urllib.request
         import time
 
         cfg = DummyMonitoringConfig()
+        cfg.metrics_port = 9109
         exporter = MetricsExporter(cfg)
         exporter.record_trade("BTC", "5m", 50000, 10, 0.7, 0.93)
 
-        time.sleep(0.3)
+        await asyncio.sleep(0.5)
 
-        url = f"http://localhost:{cfg.metrics_port}{cfg.metrics_path}"
-        with urllib.request.urlopen(url, timeout=3) as resp:
-            body = resp.read().decode()
-            # Should contain labeled metric
-            assert 'trading_bot_trades_total{asset="BTC",outcome="YES",window="5m"}' in body
-            assert 'trading_bot_p_hat{asset="BTC",window="5m"} 0.7' in body or \
-                   'trading_bot_p_hat{asset="BTC",window="5m"} 0.700000' in body
+        url = f"http://127.0.0.1:{cfg.metrics_port}{cfg.metrics_path}"
+        try:
+            with urllib.request.urlopen(url, timeout=3) as resp:
+                body = resp.read().decode()
+                # Should contain labeled metric
+                assert 'trading_bot_trades_total{asset="BTC",outcome="YES",window="5m"}' in body
+                assert 'trading_bot_p_hat{asset="BTC",window="5m"} 0.7' in body or \
+                       'trading_bot_p_hat{asset="BTC",window="5m"} 0.700000' in body
+        finally:
+            await exporter.stop()

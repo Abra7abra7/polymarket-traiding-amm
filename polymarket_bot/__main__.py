@@ -830,8 +830,11 @@ class TradingBot:
                     asset = pos['asset']
                     asset_cfg = self.config.trading.assets.get(asset)
                     if asset_cfg:
-                        market_id = self._resolve_market_id(asset_cfg, window)
-                        pos['current_price'] = await self.client.get_ticker(market_id)
+                        window_pos = pos.get('window', '5m')
+                        # _resolve_market_id now handles the window mapping
+                        market_id = self._resolve_market_id(asset_cfg, window_pos)
+                        # AMMClient.get_ticker(asset, window)
+                        pos['current_price'] = await self.client.get_ticker(asset, window_pos)
                         entry = pos['entry_price']
                         current = pos['current_price']
                         pos['unrealized_pnl'] = (current - entry) * pos['shares']

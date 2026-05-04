@@ -78,7 +78,7 @@ class ExchangeConfig(BaseModel):
 
 class AssetConfig(BaseModel):
     symbol: Optional[str] = None  # filled from config key at load time
-    market_id: Optional[str] = None
+    market_id: str
     condition_id: Optional[str] = None
     token_id: Optional[str] = None
     windows: List[str] = Field(default_factory=lambda: ['5m'])

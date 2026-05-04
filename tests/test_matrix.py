@@ -17,7 +17,7 @@ from polymarket_bot.core.matrix import TransitionMatrix, bin_price
 class TestConstruction:
     def test_default(self):
         m = TransitionMatrix()
-        assert m.n_states == 100
+        assert m.n_states == 20
         assert m.window_size == 60
         assert m.smoothing_alpha == 0.3
         assert m.min_transitions == 30
@@ -25,7 +25,7 @@ class TestConstruction:
         assert len(m.buffer) == 0
         assert m.total_transitions == 0
         assert m.P_prev is None
-        assert m.P.shape == (100, 100)
+        assert m.P.shape == (20, 20)
         assert np.all(m.P == 0)
 
     def test_custom(self):
@@ -37,16 +37,16 @@ class TestConstruction:
 
 class TestBinPrice:
     @pytest.mark.parametrize("price,exp", [
-        (0.0, 0), (1.0, 99), (0.5, 50), (0.01, 1), (0.99, 99),
+        (0.0, 0), (1.0, 19), (0.5, 9), (0.05, 0), (0.95, 18),
     ])
     def test_bin(self, price, exp):
-        s = bin_price(price, n_states=100)
-        assert 0 <= s < 100
+        s = bin_price(price, n_states=20)
+        assert 0 <= s < 20
         assert abs(s - exp) <= 1
 
     def test_clamp(self):
-        assert bin_price(-0.1, 100) == 0
-        assert bin_price(1.2, 100) == 99
+        assert bin_price(-0.1, 20) == 0
+        assert bin_price(1.2, 20) == 19
 
 
 class TestUpdate:

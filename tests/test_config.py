@@ -28,10 +28,13 @@ class TestExpandPath:
         assert path == "/tmp/test/file.yaml"
 
     def test_expand_combined(self, monkeypatch):
+        # Use platform-appropriate env var syntax if needed, but os.path.expandvars handles $ on all
         monkeypatch.setenv("CONF", "config")
         path = expand_path("~/$CONF/file.yaml")
         assert "~" not in path
-        assert Path.home().as_posix() in path
+        # Normalize both to posix for comparison
+        expected_root = Path.home().as_posix()
+        assert expected_root in Path(path).as_posix()
 
 
 class TestEnvSubstitution:

@@ -145,7 +145,7 @@ class TestMonitoringEndpoints:
 
         import aiohttp
         async with aiohttp.ClientSession() as session:
-            async with session.get("http://localhost:8081/health/live") as resp:
+            async with session.get("http://127.0.0.1:8081/health/live") as resp:
                 assert resp.status == 200
                 data = await resp.json()
                 assert data["status"] == "ok"
@@ -158,7 +158,7 @@ class TestMonitoringEndpoints:
 
         import aiohttp
         async with aiohttp.ClientSession() as session:
-            async with session.get("http://localhost:8081/health/ready") as resp:
+            async with session.get("http://127.0.0.1:8081/health/ready") as resp:
                 assert resp.status == 200
                 data = await resp.json()
                 assert data["status"] == "ready"
@@ -172,7 +172,7 @@ class TestMonitoringEndpoints:
 
         import aiohttp
         async with aiohttp.ClientSession() as session:
-            async with session.get("http://localhost:9091/metrics") as resp:
+            async with session.get("http://127.0.0.1:9091/metrics") as resp:
                 assert resp.status == 200
                 body = await resp.text()
                 assert "trading_bot_portfolio_value_usd" in body
@@ -254,7 +254,7 @@ class TestSmokeProcess:
             [sys.executable, "-m", "polymarket_bot",
              "--config", str(tmp_config),
              "--dry-run", "--log-level", "ERROR"],
-            cwd="/opt/trading_bot",
+            cwd=".",
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )

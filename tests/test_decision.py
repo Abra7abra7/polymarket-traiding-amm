@@ -83,16 +83,17 @@ class TestShouldEnterLogic:
         assert enter is False
         assert meta["cond_gap"] is False
         assert meta["gap"] < decision_engine.eps
-    def test_no_enter_when_probability_below_min(self, decision_engine):
-        # Use a matrix where diagonal probability is below min_probability
-        diag_val = 0.009
-        P_low = self.create_matrix(diag_val)
-        state = 50
-        price = 0.01
+    def test_no_enter_when_probability_below_min(self):
+        # Use a custom engine with high min_probability
+        de = DecisionEngine(min_probability=0.2)
+        # Use a matrix where diagonal (max) probability is 0.1 < 0.2
+        P = self.create_matrix(0.1, n_states=20)
+        state = 10
+        price = 0.05
 
-        enter, meta = decision_engine.should_enter(P_low, state, price)
+        enter, meta = de.should_enter(P, state, price)
         assert enter is False
-        assert meta["p_hat"] < decision_engine.min_probability
+        assert meta["p_hat"] < de.min_probability
 
     def test_meta_dict_structure(self, decision_engine):
         """Meta output contains all required keys."""

@@ -56,7 +56,7 @@ class TestHealthServer:
         await server.start()
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"http://localhost:{cfg.health_port}{cfg.health_live_path}") as resp:
+            async with session.get(f"http://127.0.0.1:{cfg.health_port}{cfg.health_live_path}") as resp:
                 assert resp.status == 200
                 data = await resp.json()
                 assert data["status"] == "ok"
@@ -71,7 +71,7 @@ class TestHealthServer:
         await server.start()
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"http://localhost:{cfg.health_port}{cfg.health_ready_path}") as resp:
+            async with session.get(f"http://127.0.0.1:{cfg.health_port}{cfg.health_ready_path}") as resp:
                 assert resp.status == 503
                 data = await resp.json()
                 assert data["status"] == "not_ready"
@@ -86,7 +86,7 @@ class TestHealthServer:
         await server.start()
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"http://localhost:{cfg.health_port}{cfg.health_ready_path}") as resp:
+            async with session.get(f"http://127.0.0.1:{cfg.health_port}{cfg.health_ready_path}") as resp:
                 assert resp.status == 503
                 data = await resp.json()
                 assert data["reason"] == "exchange_not_connected"
@@ -100,7 +100,7 @@ class TestHealthServer:
         await server.start()
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"http://localhost:{cfg.health_port}{cfg.health_ready_path}") as resp:
+            async with session.get(f"http://127.0.0.1:{cfg.health_port}{cfg.health_ready_path}") as resp:
                 assert resp.status == 503
                 data = await resp.json()
                 assert data["reason"] == "no_matrices"
@@ -114,7 +114,7 @@ class TestHealthServer:
         await server.start()
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"http://localhost:{cfg.health_port}{cfg.health_ready_path}") as resp:
+            async with session.get(f"http://127.0.0.1:{cfg.health_port}{cfg.health_ready_path}") as resp:
                 assert resp.status == 200
                 data = await resp.json()
                 assert data["status"] == "ready"
@@ -145,7 +145,7 @@ class TestHealthJsonFormat:
         await server.start()
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"http://localhost:{cfg.health_port}{cfg.health_live_path}") as resp:
+            async with session.get(f"http://127.0.0.1:{cfg.health_port}{cfg.health_live_path}") as resp:
                 data = await resp.json()
                 assert set(data.keys()) == {"status", "timestamp"}
 
@@ -158,7 +158,7 @@ class TestHealthJsonFormat:
         await server.start()
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"http://localhost:{cfg.health_port}{cfg.health_ready_path}") as resp:
+            async with session.get(f"http://127.0.0.1:{cfg.health_port}{cfg.health_ready_path}") as resp:
                 data = await resp.json()
                 keys = set(data.keys())
                 assert keys >= {"status", "matrices", "open_positions", "timestamp"}
