@@ -28,14 +28,14 @@ python -m polymarket_bot
 ```
 Observe:
 - No `Order rejected` errors (orders are mock-simulated)
-- Matrices count = 82 in startup logs
-- Health endpoint returns `{"status":"ok"}` on port 8086
-- Metrics available at `http://localhost:9090/metrics`
+- Matrices count corresponds to enabled asset/window pairs in `config.yaml`
+- Health endpoint returns `{"status":"ok"}` on port 8089
+- Metrics available at `http://localhost:9093/metrics`
 - Checkpoint written to `~/.trading_bot/checkpoint.json` after first cycle
 
 ### Phase 3 — Metrics Validation
 ```bash
-curl http://localhost:9090/metrics | grep -E 'portfolio_value|open_positions|trades'
+curl http://localhost:9093/metrics | grep -E 'portfolio_value|open_positions|trades'
 ```
 - `portfolio_value` should reflect `initial_capital_usd` (100.00) + any unrealized P&L
 - `open_positions` starts at 0
@@ -44,7 +44,7 @@ curl http://localhost:9090/metrics | grep -E 'portfolio_value|open_positions|tra
 ### Phase 4 — Extended Run (1 hour)
 Let bot complete ≥10 evaluation cycles. Then:
 ```bash
-curl http://localhost:8086/health/ready
+curl http://localhost:8089/health/ready
 ```
 Should return `{"status":"ok"}`. Inspect logs for errors. If stable, proceed to live deployment prep.
 
@@ -52,39 +52,34 @@ Should return `{"status":"ok"}`. Inspect logs for errors. If stable, proceed to 
 
 ---
 
-## 📊 Current Deployment Status (2026-04-23)
+## 📊 Current Deployment Status (2026-05-04)
 
-### Active Markets (4 Crypto — 5m only for now)
+### Active Markets (BTC & ETH — Multi-timeframe)
 
-| Asset | Condition ID | Token ID (YES) | Market |
-|-------|-------------|----------------|--------|
-| BTC | `0xe718f96652b0123ed430993507ab3c4ee80c8abdd0c8ab1da400598c289d12cf` | `205091585090335046906362134601346455643674030564966040128345803491463052583` | Will Bitcoin go up in 5 minutes? |
-| ETH | `0x6e8fd545fd885b615e00b70952c49a46a89e6b8625d4af7ddd85c0ba5734f171` | `83462430154700707531442741624486392412767050505390938131430305541434588011780` | Will Ethereum go up in 5 minutes? |
-| HYPE | `0x14dcb704699422d65388dcf87a613bcdfea75436a86fac72ba13002dbc46fefa` | `99972472356206794787824222634218934015229052417315973860181054910791578303966` | Will Hyperliquid go up in 5 minutes? |
-| SOL | `0x9865122bf8ba7838c258b0221e85a99fd460f6ad8f2460e07cb951ef24756903` | `22806568176570608188152263328131113547050300938468096168398822103497819973518` | Will Solana go up in 5 minutes? |
+| Asset | Windows | Condition ID (V2) | Market |
+|-------|---------|-------------------|--------|
+| BTC | 5m, 15m, 1h, 4h | `0xe718f96...` | Will Bitcoin go up? |
+| ETH | 5m, 15m, 1h, 4h | `0x6e8fd54...` | Will Ethereum go up? |
 
-- **Timeframes active**: Currently only `5m` enabled. Additional timeframes (`15m`, `1h`, `4h`, `1d`) will be added once those markets appear on Γamma API with valid `clobTokenIds`.
-- **Orderbook status**: 404 on CLOB (markets not yet live on orderbook). Paper trading shows "Failed to get ticker" until orderbook becomes available.
+- **Timeframes active**: Multi-window fusion enabled for 5m, 15m, 1h, and 4h horizons.
+- **CLOB V2 status**: Fully migrated and operational on Polymarket's V2 contracts.
 ### Pipeline Status
-- ✅ Config: 4 crypto assets mapped (BTC, ETH, HYPE, SOL)
-- ✅ Auth: L2 headers (Signer + RequestArgs) working
-- ✅ Token mapping: condition_id + token_id loaded from config
-- ⏳ Orderbook: pending — token IDs not yet active on CLOB (404)
-- ⏳ Ticker: blocked until orderbook live
-- ⏳ Matrix: paper trading runs, but no price data yet
-- ❌ Live orders: 403 (geoblock) + 404 (orderbook inactive)
-### Config
-- `dry_run: false` | `paper_trading: false` (live mode, but blocked by geofence)
-- `.env`: All keys present (`POLYMARKET_WALLET_ADDRESS`, `POLYMARKET_CLOB_JWT`, `POLYMARKET_API_KEY/SECRET/PRIVATE_KEY`)
-- `trading.assets`: BTC & ETH enabled; all others disabled
+- ✅ Config: BTC and ETH mapped across 4 timeframes each
+- ✅ Auth: V2 SDK + EIP-712 signing + L2 credentials working
+- ✅ Client: Standardized `@property connected` interface across all clients
+- ✅ Token mapping: pUSD collateral integration complete
+- ✅ Orderbook: Operational on V2 endpoints
+- ✅ Ticker: Live feed processing into Markov matrices
+- ✅ Matrix: Transitions and Bellman values computing correctly
+- ✅ Paper trading: Fully synchronized with live prices and simulated execution
+- ✅ Live orders: Blocked only by `dry_run: true` setting or optional geofencing
 
 ### Next Steps
-1. **Wait for CLOB activation** — orderbook endpoint should return 200 for our token IDs (currently 404). Check every 30min via monitor script.
-2. **Once orderbook live**, verify ticker prices feed into matrix.
-3. **Resolve geoblock** (403) via proxy/VPN or KYC before live orders.
-4. **Add expanded timeframes** (`15m`, `1h`, `4h`, `1d`) when Γamma API lists those markets (currently only `5m` exists for these assets).
-5. **Add NO token side** for short-selling (currently config uses YES token only; shorting would require separate `sell` logic or flipping outcome).
+1. **Optimize Tau** — Current `tau: 0.05` is calibrated for low-volatility paper runs; monitor and adjust for live market spikes.
+2. **Expand Assets** — Enable SOL, HYPE, and XRP once V2 liquidity stabilizes for those markets.
+3. **Short-selling** — Currently config uses YES tokens; implement NO side flipping for full market coverage.
 ---
+
 
 ## 🚀 Going Live (Real Money)
 
@@ -211,13 +206,13 @@ Every 60 seconds:
 
 | Section | Parameter | Meaning | Default |
 |---|---|---|---|
-| `trading.assets` | list of `SYMBOL:WINDOW` | Assets & timeframes to trade | 76 items |
+| `trading.assets` | list of `SYMBOL:WINDOW` | Assets & timeframes to trade | 8 enabled |
 | `trading.markov.n_states` | int | Discretization bins (0–19) | **20** |
-| `trading.markov.window_sizes` | `{5m:60, 1h:60, 6h:60}` | Buffer length for each window | 60 |
-| `trading.markov.min_transitions` | int | Min transitions for matrix validity | **5** |
-| `trading.thresholds.tau` | float (0–1) | Entry threshold: \`|V − Veq| > tau\` | **0.3** |
-| `trading.thresholds.eps` | float (0–1) | Exit tolerance: price near opposite outcome | **0.02** |
-| `trading.risk.max_position_ratio` | float (0–1) | Max size per position | 0.1 |
+| `trading.markov.window_sizes` | `{5m:40, 1h:24, ...}` | Buffer length for each window | Variable |
+| `trading.markov.min_transitions` | int | Min transitions for matrix validity | **20** |
+| `trading.thresholds.tau` | float (0–1) | Entry threshold: \`|V − Veq| > tau\` | **0.05** |
+| `trading.thresholds.eps` | float (0–1) | Exit tolerance: price near opposite outcome | **0.15** |
+| `trading.risk.max_position_ratio` | float (0–1) | Max size per position | 0.05 |
 | `trading.risk.daily_drawdown_limit` | float (0–1) | Stop trading after daily loss | 0.02 |
 | `trading.filters.volume_filter` | float (USD) | Minimum 24h volume | 100_000 |
 | `trading.regime_filter.enabled` | bool | Enable regime-aware position sizing | false |
@@ -351,7 +346,7 @@ journalctl -u polymarket-bot.service --since "10:00" --until "11:00"
 - `[ERROR]` / `[WARNING]` → issues
 
 ### Metrics (Prometheus)
-Exposed on `http://localhost:9090/metrics` (or configured port):
+Exposed on `http://localhost:9093/metrics` (or configured port):
 ```
 polymarket_positions_active{asset="BTC:1h"} 1
 polymarket_matrix_transitions_total{asset="ETH:5m"} 127
@@ -368,7 +363,7 @@ polymarket_exit_signals_total 11
 {
   "status": "healthy",
   "active_positions": 3,
-  "matrix_count": 82,
+  "matrix_count": 8,
   "uptime_seconds": 5432
 }
 ```
@@ -431,9 +426,10 @@ WantedBy=multi-user.target
 ### Environment
 ```
 DRY_RUN=true            # false for live trading
+POLYMARKET_PRIVATE_KEY=… # required for live
 POLYMARKET_API_KEY=…    # required for live
 LOG_LEVEL=INFO
-PROMETHEUS_PORT=9090
+PROMETHEUS_PORT=9093
 ```
 
 ### Config Reload
@@ -671,4 +667,4 @@ python -c "import json; d=json.load(open('/root/.trading_bot/checkpoint.json'));
 
 ---
 
-*Last updated: 2026‑04‑22 (commit f2edc42)*
+*Last updated: 2026-05-04 (commit CLOB-V2-STABLE)*

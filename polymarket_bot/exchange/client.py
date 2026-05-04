@@ -27,7 +27,7 @@ class PolymarketClient(BaseExchangeClient):
         self.sandbox = sandbox
         self.base_url = base_url
         self.ws_url = ws_url
-        self.connected = False
+        self._connected = False
         self._order_counter = 0
         self._orders: Dict[str, Dict] = {}
 
@@ -1543,12 +1543,16 @@ class PolymarketClient(BaseExchangeClient):
     async def connect(self) -> None:
         """Connect to exchange (mock)."""
         await asyncio.sleep(0.1)  # Simulate network latency
-        self.connected = True
+        self._connected = True
         print("[Exchange] Connected to Polymarket (mock mode)")
 
     async def disconnect(self) -> None:
         """Disconnect from exchange."""
-        self.connected = False
+        self._connected = False
+
+    @property
+    def connected(self) -> bool:
+        return self._connected
 
     async def __aenter__(self):
         await self.connect()

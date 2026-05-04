@@ -877,16 +877,20 @@ class TradingBot:
             sleep_time = max(0, 60.0 - elapsed)
             print("[EVAL] About to sleep/wait (sleep_time=%.2f)" % sleep_time, flush=True)
             if sleep_time > 0 and self.running:
-                # Debug
-                print("[DEBUG] _shutdown_future id=%s done=%s" % (id(self._shutdown_future), self._shutdown_future.done()), flush=True)
                 # Wait for either shutdown signal or sleep timeout using future (no race)
                 sleep_task = asyncio.create_task(asyncio.sleep(sleep_time))
-                print("[DEBUG] created sleep_task %s" % id(sleep_task), flush=True)
-                done, pending = await asyncio.wait(
-                    [self._shutdown_future, sleep_task],
-                    return_when=asyncio.FIRST_COMPLETED
-                )
-                print("[DEBUG] wait returned: done=%s pending=%s" % ([id(t) for t in done], [id(t) for t in pending]), flush=True)
+                
+                # If _shutdown_future is None (e.g. in tests calling loop directly), 
+                # we just wait for the sleep task.
+                if self._shutdown_future:
+                    done, pending = await asyncio.wait(
+                        [self._shutdown_future, sleep_task],
+                        return_when=asyncio.FIRST_COMPLETED
+                    )
+                else:
+                    await sleep_task
+                    done, pending = {sleep_task}, set()
+                
                 if sleep_task in pending:
                     sleep_task.cancel()
             print("[EVAL] After sleep/wait block", flush=True)

@@ -1,20 +1,3 @@
-"""
-Polymarket Live REST API Client — production trading.
-
-Implements real order execution via Polymarket's authenticated endpoints.
-Uses aiohttp for async HTTP calls with API key authentication.
-
-Endpoints (as of 2026-04):
-  GET    /markets                 — list all markets
-  GET    /markets/{marketId}      — market details + current price
-  GET    /portfolio               — account balances & positions
-  POST   /orders                  — place order (buy/sell)
-  GET    /orders                  — list open orders
-  DELETE /orders/{orderId}        — cancel order
-
-Authentication: Bearer token (API Key) in Authorization header.
-Base URL: https://api.polymarket.com
-"""
 import asyncio
 import os
 import json
@@ -22,31 +5,19 @@ import time
 import hmac
 import hashlib
 import base64
+import logging
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Any
+from decimal import Decimal
 import aiohttp
 import structlog  # type: ignore
 
 from polymarket_bot.exchange.interface import BaseExchangeClient
-from py_clob_client.signer import Signer
-from py_clob_client.headers.headers import create_level_1_headers, create_level_2_headers
-from py_clob_client.clob_types import ApiCreds, RequestArgs
+from py_clob_client_v2 import ClobClient, OrderArgs, OrderType, PartialCreateOrderOptions
+from py_clob_client_v2.clob_types import ApiCreds
+from py_clob_client_v2.order_builder.constants import BUY, SELL
 
 logger = structlog.get_logger()
-
-
-"""
-Polymarket live client – multi-API routing (Gamma, Data, CLOB) with Bearer auth.
-"""
-
-import os
-import aiohttp
-import json
-import logging
-from typing import Dict, Any, Optional, List
-from polymarket_bot.exchange.interface import BaseExchangeClient
-
-logger = logging.getLogger('ExchangeClient')
 
 
 class PolymarketLiveClient(BaseExchangeClient):
@@ -87,7 +58,10 @@ class PolymarketLiveClient(BaseExchangeClient):
         api_passphrase: str = None,
         private_key: str = None,
         wallet_address: str = None,
-        bearer_token: str = None,  # deprecated – use clob_jwt
+        signature_type: int = 1,  # 1 = POLY_PROXY
+        funder_address: str = None,
+        builder_code: str = None,
+        **kwargs: Any
     ):
         super().__init__()
         self.dry_run = dry_run
@@ -95,37 +69,29 @@ class PolymarketLiveClient(BaseExchangeClient):
         self.gamma_base = gamma_base_url or os.environ.get("POLYMARKET_GAMMA_URL", self.BASE_GAMMA)
         self.data_base  = data_base_url  or os.environ.get("POLYMARKET_DATA_URL",  self.BASE_DATA)
         self.clob_base  = clob_base_url  or os.environ.get("POLYMARKET_CLOB_URL",  self.BASE_CLOB)
-        # CLOB JWT for Gamma/Data API authentication
-        self.clob_jwt = clob_jwt or bearer_token or os.environ.get("POLYMARKET_CLOB_JWT")
-        # CLOB Level 2 credentials for order submission
+        
+        # Auth credentials
         self.api_key = api_key or os.environ.get("POLYMARKET_API_KEY")
         self.api_secret = api_secret or os.environ.get("POLYMARKET_API_SECRET")
         self.api_passphrase = api_passphrase or os.environ.get("POLYMARKET_API_PASSPHRASE")
         self.private_key = private_key or os.environ.get("POLYMARKET_PRIVATE_KEY")
-        self._api_creds = ApiCreds(self.api_key, self.api_secret, self.api_passphrase)
         self.wallet_address = wallet_address or os.environ.get("POLYMARKET_WALLET_ADDRESS")
+        self.funder_address = funder_address or self.wallet_address
+        self.signature_type = signature_type
+        self.builder_code = builder_code or os.environ.get("POLYMARKET_BUILDER_CODE", "0")
 
-        # Level 1 signer for authenticated Gamma API calls (uses private key)
-        self._signer: Optional[Signer] = None
-        if self.private_key:
-            self._signer = Signer(self.private_key, chain_id=137)
-
-        self.connected = False
+        self.clob_client: Optional[ClobClient] = None
+        self._connected = False
         self._session: Optional[aiohttp.ClientSession] = None
         self._markets: List[Dict] = []
         self._token_id_by_asset: Dict[str, str] = {}
         self._condition_id_by_asset: Dict[str, str] = {}
 
-        # L2 credentials initialized above as self._api_creds
-
-        if not self.dry_run:
-            if not self.clob_jwt:
-                logger.warning("POLYMARKET_CLOB_JWT not set — authenticated endpoints will fail")
-            if not self.wallet_address:
-                raise ValueError("Missing POLYMARKET_WALLET_ADDRESS")
+        if not self.dry_run and not self.private_key:
+            logger.warning("POLYMARKET_PRIVATE_KEY not set — trading will be disabled")
 
         logger.info(
-            f"PolymarketLiveClient init: dry_run={self.dry_run}, "
+            f"PolymarketLiveClient V2 init: dry_run={self.dry_run}, "
             f"wallet={self.wallet_address[:10] + '...' if self.wallet_address else None}"
         )
 
@@ -143,51 +109,88 @@ class PolymarketLiveClient(BaseExchangeClient):
             headers["Authorization"] = f"Bearer {self.bearer_token}"
         return headers
 
-    async def connect(self) -> None:
+    async def connect(self) -> bool:
+        """Initialize ClobClient V2 and establish session."""
+        if self._session is None:
+            self._session = aiohttp.ClientSession()
+        
         if self.dry_run:
+            logger.info("PolymarketLiveClient connected (DRY RUN)")
             self.connected = True
-            return
-        self._session = aiohttp.ClientSession(trust_env=True)
+            return True
+
         try:
-            # Health check via public markets endpoint; also load market data
-            resp = await self._public_get("/markets")
-            self._markets = resp.get("data", resp) if isinstance(resp, dict) else resp
-            self._build_market_maps()
-            self._load_asset_maps_from_config()
-            logger.info(f"Connected to Polymarket — loaded {len(self._markets)} markets")
-            self.connected = True
+            creds = None
+            if self.api_key and self.api_secret and self.api_passphrase:
+                creds = ApiCreds(self.api_key, self.api_secret, self.api_passphrase)
+            
+            # Initialize the SDK client
+            self.clob_client = ClobClient(
+                host=self.clob_base,
+                key=self.private_key,
+                chain_id=137,
+                creds=creds,
+                signature_type=self.signature_type,
+                funder=self.funder_address
+            )
+
+            # Derive credentials if missing but private key exists
+            if not creds and self.private_key:
+                logger.info("L2 credentials missing, deriving from L1...")
+                creds_dict = self.clob_client.create_or_derive_api_key()
+                self.api_key = creds_dict["apiKey"]
+                self.api_secret = creds_dict["secret"]
+                self.api_passphrase = creds_dict["passphrase"]
+                self.clob_client.set_api_creds(ApiCreds(self.api_key, self.api_secret, self.api_passphrase))
+                logger.info("L2 credentials derived successfully")
+
+            # Load initial market data for mapping
+            await self.get_markets()
+            
+            self._connected = True
+            logger.info("PolymarketLiveClient V2 connected successfully")
+            return True
         except Exception as e:
-            logger.error(f"Connection failed: {e}")
-            raise
+            logger.error(f"Failed to connect to Polymarket CLOB V2: {e}")
+            self._connected = False
+            return False
+
     async def disconnect(self) -> None:
         if self._session:
             await self._session.close()
             self._session = None
-        self.connected = False
+        self._connected = False
 
-    async def _gamma_get(self, path: str, params: Dict = None) -> Any:
-        """Authenticated GET to Gamma/Data API using CLOB JWT."""
+    @property
+    def connected(self) -> bool:
+        return self._connected
+        self.clob_client = None
+        logger.info("PolymarketLiveClient disconnected")
+
+    def _headers(self) -> Dict[str, str]:
+        """Deprecated in V2 — SDK handles headers."""
+        return {}
+
+    async def _get(self, path: str, params: Dict = None) -> Any:
+        """GET request using SDK or manual session for Gamma/Data."""
         if self.dry_run:
-            raise NotImplementedError("Live client in dry-run mode should not be used")
+            return {}
+        
+        # Use SDK for authenticated CLOB calls if applicable
+        if path.startswith("/orders") and self.clob_client:
+            return self.clob_client.get_orders()
+
         base = self._base_for(path)
         url = f"{base}{path}"
-        headers = {}
-        if self._signer:
-            headers = create_level_1_headers(self._signer)
-        elif self.clob_jwt:
-            # Fallback to legacy JWT if signer not available
-            headers = {"Authorization": f"Bearer {self.clob_jwt}"}
-        """Authenticated GET to Gamma/Data API using CLOB JWT."""
-        if self.dry_run:
-            raise NotImplementedError("Live client in dry-run mode should not be used")
-        base = self._base_for(path)
-        url = f"{base}{path}"
-        headers = {"Authorization": f"Bearer {self.clob_jwt}"} if self.clob_jwt else {}
-        async with self._session.get(url, headers=headers, params=params) as resp:
+        async with self._session.get(url, params=params) as resp:
             if resp.status != 200:
                 text = await resp.text()
                 raise RuntimeError(f"GET {path} failed {resp.status}: {text}")
             return await resp.json()
+
+    async def _gamma_get(self, path: str, params: Dict = None) -> Any:
+        """Helper for Gamma API calls."""
+        return await self._get(path, params)
 
     async def _public_get(self, path: str, params: Dict = None) -> Any:
         """Public GET without authentication."""
@@ -202,28 +205,8 @@ class PolymarketLiveClient(BaseExchangeClient):
             return await resp.json()
 
     async def _post(self, path: str, data: Dict) -> Any:
-        if self.dry_run:
-            raise NotImplementedError("Live client in dry-run mode should not be used")
-
-        base = self._base_for(path)
-        url = f"{base}{path}"
-        # Use L2 auth for order submission
-        if path.startswith("/orders"):
-            if not self._signer:
-                raise ValueError("Private key required for order submission (L2 auth)")
-            request_args = RequestArgs(
-                method="POST",
-                request_path=path,
-                body=data
-            )
-            headers = create_level_2_headers(self._signer, self._api_creds, request_args)
-        else:
-            headers = self._headers()
-        async with self._session.post(url, headers=headers, json=data) as resp:
-            if resp.status not in (200, 201):
-                text = await resp.text()
-                raise RuntimeError(f"POST {path} failed {resp.status}: {text}")
-            return await resp.json()
+        """Deprecated in V2 — Use self.clob_client methods directly."""
+        raise NotImplementedError("Use clob_client methods for POST requests in V2")
 
     # ---- Public API ----
 
@@ -349,24 +332,41 @@ class PolymarketLiveClient(BaseExchangeClient):
         return {}
 
     async def get_positions(self) -> List[Dict[str, Any]]:
-        # Data API returns either {"positions": [...]} or a bare list
-
-
+        """Fetch open positions via CLOB Data API."""
         if self.dry_run:
             return []
-        wallet = self.wallet_address.lower()
-        positions = await self._public_get(f"/positions?user={wallet}")
-        return [p for p in positions if p.get("size", 0) > 0]
+        
+        if not self.clob_client:
+            return []
+
+        try:
+            # SDK method for positions
+            resp = self.clob_client.get_positions()
+            # V2 response structure might vary, usually a list of position objects
+            return [p for p in resp if float(p.get("size", 0)) > 0]
+        except Exception as e:
+            logger.error(f"Failed to fetch positions: {e}")
+            return []
+
     async def get_balance(self) -> float:
-        # Data API returns a list of {user, value}
-
-
+        """Fetch pUSD balance via CLOB Data API."""
         if self.dry_run:
             return 0.0
-        wallet = self.wallet_address.lower()
-        data = await self._public_get(f"/value?user={wallet}")
-        total = sum(float(p.get("value", 0)) for p in data)
-        return total
+        
+        if not self.clob_client:
+            return 0.0
+
+        try:
+            # SDK method for balances (pUSD)
+            balances = self.clob_client.get_balances()
+            # Find pUSD balance
+            for b in balances:
+                if b.get("asset") == "pUSD" or b.get("asset_type") == "collateral":
+                    return float(b.get("balance", 0))
+            return 0.0
+        except Exception as e:
+            logger.error(f"Failed to fetch balance: {e}")
+            return 0.0
 
     async def get_volume_24h(self, market_id: str) -> float:
         """Get 24-hour trading volume for a market."""
@@ -391,24 +391,51 @@ class PolymarketLiveClient(BaseExchangeClient):
     ) -> Dict:
         if self.dry_run:
             return {"success": True, "dry_run": True, "order_id": "dry-123"}
-        if side not in ('buy', 'sell'):
+        
+        if not self.clob_client:
+            return {"success": False, "error": "Not connected to CLOB"}
+
+        if side.lower() not in ('buy', 'sell'):
             raise ValueError(f"Invalid side: {side}")
-        size = float(size)
-        price = float(price)
-        payload = {
-            "order_type": "LIMIT",
-            "token_id": token_id,
-            "side": side,
-            "size": str(size),
-            "price": str(price),
-            "neg_risk": False,
-        }
-        resp = await self._post("/orders", data=payload)
-        data = await resp.json()
-        if resp.status == 200:
-            return {"success": True, "order_id": data.get("orderID") or data.get("order_id")}
-        else:
-            return {"success": False, "error": data, "status": resp.status}
+
+        try:
+            side_val = BUY if side.lower() == "buy" else SELL
+            
+            # TODO: Fetch tick_size and neg_risk dynamically if possible
+            # For now using safe defaults or assuming standard markets
+            options = PartialCreateOrderOptions(
+                tick_size="0.001", 
+                neg_risk=False
+            )
+            
+            # create_and_post_order handles signing and submission
+            resp = self.clob_client.create_and_post_order(
+                OrderArgs(
+                    token_id=token_id,
+                    price=float(price),
+                    size=float(size),
+                    side=side_val
+                ),
+                options=options,
+                order_type=OrderType.GTC
+            )
+
+            if resp.get("success"):
+                return {
+                    "success": True, 
+                    "order_id": resp.get("orderID"),
+                    "status": resp.get("status")
+                }
+            else:
+                return {
+                    "success": False, 
+                    "error": resp.get("errorMsg") or resp,
+                    "status": resp.get("status")
+                }
+
+        except Exception as e:
+            logger.error(f"Order execution error: {e}")
+            return {"success": False, "error": str(e)}
 
     async def buy(self, asset: str, size: float, price: Optional[float] = None) -> Dict:
         token_id = self._token_id_by_asset.get(asset)
@@ -445,13 +472,21 @@ class PolymarketLiveClient(BaseExchangeClient):
             return best_ask
 
     async def get_orderbook(self, asset_id: str) -> Dict[str, Any]:
-        """Get orderbook for asset using token_id via public CLOB endpoint."""
+        """Get orderbook for asset using token_id via SDK."""
         await self._ensure_token_for_asset(asset_id)
         token_id = self._token_id_by_asset.get(asset_id)
         if not token_id:
             logger.warning(f"No token_id for asset {asset_id}")
             return {"bids": [], "asks": []}
-        return await self._public_get(f"/book?token_id={token_id}&depth=10")
+        
+        try:
+            if self.clob_client:
+                # SDK return format: {'bids': [...], 'asks': [...]}
+                return self.clob_client.get_orderbook(token_id)
+            return await self._public_get(f"/book", params={"token_id": token_id, "depth": 10})
+        except Exception as e:
+            logger.error(f"Failed to fetch orderbook for {asset_id}: {e}")
+            return {"bids": [], "asks": []}
 
 
     async def __aenter__(self):

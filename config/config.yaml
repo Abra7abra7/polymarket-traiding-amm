@@ -14,6 +14,8 @@ exchange:
   auth:
     private_key: ${POLYMARKET_PRIVATE_KEY}
     wallet_address: ${POLYMARKET_WALLET_ADDRESS}
+    builder_code: ${POLYMARKET_BUILDER_CODE} # Attribution code for V2
+    signature_type: 1 # 0=EOA, 1=Proxy, 2=Safe
   platform: polymarket
 monitoring:
   data_dir: ~/.trading_bot

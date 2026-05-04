@@ -15,6 +15,12 @@ class BaseExchangeClient(ABC):
         """Establish connection to the exchange."""
         pass
 
+    @property
+    @abstractmethod
+    def connected(self) -> bool:
+        """Check if client is connected."""
+        pass
+
     @abstractmethod
     async def disconnect(self) -> None:
         """Close connection and clean up resources."""

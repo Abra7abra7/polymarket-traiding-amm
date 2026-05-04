@@ -9,14 +9,21 @@ import json
 from unittest.mock import MagicMock
 from polymarket_bot.paper_trading import PaperTradingEngine
 
+from types import SimpleNamespace
+
 class DummyConfig:
     def __init__(self):
-        self.paper_trading = MagicMock()
-        self.paper_trading.initial_balance = 1000.0
-        self.paper_trading.spread_bps = 100  # 1%
-        self.paper_trading.slippage_bps = 50 # 0.5%
-        self.paper_trading.fee_bps = 20      # 0.2%
-        self.paper_trading.data_dir = "./test_paper_data"
+        self.paper_trading = SimpleNamespace(
+            initial_balance=1000.0,
+            spread_bps=100,
+            slippage_bps=50,
+            fee_bps=20,
+            data_dir="./test_paper_data",
+            swap_fee_bps=20,
+            gas_fee_usd=0.01,
+            fill_latency_ms=0,
+            partial_fill_prob=0.0
+        )
 
 @pytest.fixture
 def paper_engine():
@@ -54,7 +61,7 @@ async def test_paper_buy_execution(paper_engine):
     assert order["side"] == "buy"
     assert order["price"] > 0.5
     assert paper_engine.current_balance < 950.0 # 1000 - (0.5 * 100) - fees
-    assert "BTC" in paper_engine.positions
+    assert "BTC:0" in paper_engine.positions
 
 @pytest.mark.asyncio
 async def test_paper_sell_execution(paper_engine):
@@ -69,7 +76,7 @@ async def test_paper_sell_execution(paper_engine):
     assert order is not None
     assert order["status"] == "filled"
     assert paper_engine.current_balance > initial_balance
-    assert "BTC" not in paper_engine.positions
+    assert "BTC:0" not in paper_engine.positions
 
 @pytest.mark.asyncio
 async def test_insufficient_balance(paper_engine):

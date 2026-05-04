@@ -54,6 +54,7 @@ class PaperTradingEngine(BaseExchangeClient):
 
     def __init__(self, wrapped_client: BaseExchangeClient, config: FullConfig):
         self.wrapped = wrapped_client
+        self._connected = False
         self.config = config
         self.positions: Dict[str, SimulatedPosition] = {}
         self.trade_log: List[Dict] = []
@@ -127,8 +128,20 @@ class PaperTradingEngine(BaseExchangeClient):
         await self.wrapped.disconnect()
 
     async def __aenter__(self):
-        await self.wrapped.__aenter__()
+        await self.connect()
         return self
+
+    @property
+    def connected(self) -> bool:
+        return self._connected
+
+    async def connect(self):
+        await self.wrapped.connect()
+        self._connected = True
+
+    async def disconnect(self):
+        await self.wrapped.disconnect()
+        self._connected = False
 
     async def __aexit__(self, exc_type, exc, tb):
         await self.wrapped.__aexit__(exc_type, exc, tb)
@@ -284,7 +297,7 @@ class PaperTradingEngine(BaseExchangeClient):
         })
         logger.info(f"[PAPER] BUY filled: {asset} ${size_usd} @ {fill_price:.4f} (fee=${fee:.2f}, gas=${gas:.2f})")
         self._save_state()
-        return {"filled": True, "price": fill_price, "quantity": quantity, "status": "filled", "order_id": pid}
+        return {"filled": True, "price": fill_price, "quantity": quantity, "status": "filled", "order_id": pid, "side": "buy"}
 
     async def sell(self, market_id: str, outcome_id: int = 0, price: Optional[float] = None, amount: int = 1, order_type: str = "limit", asset: Optional[str] = None, window: Optional[str] = None) -> Optional[Dict]:
         """Simulate sell — exits long or opens short."""
@@ -328,7 +341,7 @@ class PaperTradingEngine(BaseExchangeClient):
             logger.info(f"[PAPER] SELL (exit) filled: {pid} @ {fill_price:.4f} P&L=${pnl:.2f} (fee=${sell_fee:.2f}, gas=${gas:.2f})")
             del self.positions[pid]
             self._save_state()
-            return {"filled": True, "price": fill_price, "pnl": pnl, "status": "filled", "order_id": pid}
+            return {"filled": True, "price": fill_price, "pnl": pnl, "status": "filled", "order_id": pid, "side": "sell"}
         else:
             # Open short
             size_usd = price * amount if price else 100
@@ -380,7 +393,7 @@ class PaperTradingEngine(BaseExchangeClient):
             })
             logger.info(f"[PAPER] SELL (short) filled: {asset} ${size_usd} @ {fill_price:.4f} (fee=${fee:.2f}, gas=${gas:.2f})")
             self._save_state()
-            return {"filled": True, "price": fill_price, "quantity": quantity, "status": "filled"}
+            return {"filled": True, "price": fill_price, "quantity": quantity, "status": "filled", "side": "sell"}
 
     async def get_positions(self) -> Dict:
         return {k: asdict(v) for k, v in self.positions.items()}
