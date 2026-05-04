@@ -39,3 +39,4 @@ dist/
 scratch/
 .gemini/
 .trading_bot/
+.env*

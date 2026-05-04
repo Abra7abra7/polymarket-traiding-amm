@@ -286,9 +286,10 @@ class PaperTradingEngine(BaseExchangeClient):
         self._save_state()
         return {"filled": True, "price": fill_price, "quantity": quantity, "status": "filled", "order_id": pid}
 
-    async def sell(self, market_id: str, outcome_id: int = 0, price: Optional[float] = None, amount: int = 1, order_type: str = "limit") -> Optional[Dict]:
+    async def sell(self, market_id: str, outcome_id: int = 0, price: Optional[float] = None, amount: int = 1, order_type: str = "limit", asset: Optional[str] = None, window: Optional[str] = None) -> Optional[Dict]:
         """Simulate sell — exits long or opens short."""
-        asset = market_id.split('_')[0]
+        if asset is None:
+            asset = market_id.split('_')[0]
         pid = f"{asset}:{outcome_id}"
         if pid in self.positions:
             # Exit long
