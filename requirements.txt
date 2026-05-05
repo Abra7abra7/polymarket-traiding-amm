@@ -28,7 +28,7 @@ pytest-cov>=4.1.0  # coverage
 # Ethereum / Wallet
 eth-account>=0.11.0
 web3>=6.0.0
-py-clob-client-v2>=2.0.0
+py-clob-client-v2 @ git+https://github.com/Polymarket/py-clob-client-v2.git
 
 # Utilities
 python-dotenv>=1.0.0
