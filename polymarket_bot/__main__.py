@@ -132,20 +132,21 @@ class TradingBot:
     async def evaluate_one(self, asset: str, window: str):
         """Logic for entering a trade."""
         key = f"{asset}:{window}"
-        matrix = self.matrices.get(key)
-        if not matrix:
-            matrix = TransitionMatrix(
+        if key not in self.matrices:
+            self.logger.info(f"Creating new matrix for {key}")
+            self.matrices[key] = TransitionMatrix(
                 window_size=self.config.trading.markov.window_sizes.get(window, 60),
-                n_states=self.config.trading.markov.n_states
+                n_states=self.config.trading.markov.n_states,
+                min_transitions=self.config.trading.markov.min_transitions
             )
-            self.matrices[key] = matrix
+        matrix = self.matrices[key]
 
         asset_cfg = self.config.trading.assets[asset]
         market_id = resolve_market_id(asset_cfg, window)
 
         try:
             price = await self.client.get_ticker(market_id)
-            matrix.update(price)
+            matrix.update(price, label=market_id)
             if not matrix.is_valid: return
 
             decision, meta = self.decision_engine.should_enter(matrix.get_matrix(), bin_price(price), price)

@@ -79,15 +79,15 @@ class TransitionMatrix:
         self.buffer.append((from_state, to_state))
         self.is_valid = False
 
-    def update(self, price: float) -> None:
+    def update(self, price: float, label: str = "Unknown") -> None:
         state = bin_price(price, self.n_states)
         self.states.append(state)
         if self.last_state is not None:
             self.add_transition(self.last_state, state)
             # DEBUG: visible even at INFO log level
-            print(f"[MATRIX] TRANSITION {self.last_state}->{state}  buffer={len(self.buffer)}  min={self.min_transitions}", flush=True)
+            print(f"[MATRIX] {label} TRANSITION {self.last_state}->{state}  buffer={len(self.buffer)}", flush=True)
         else:
-            print(f"[MATRIX] FIRST_STATE {state}", flush=True)
+            print(f"[MATRIX] {label} FIRST_STATE {state}", flush=True)
         self.last_state = state
         if len(self.buffer) >= self.min_transitions:
             print(f"[MATRIX] Build triggered (buffer={len(self.buffer)} >= min={self.min_transitions})", flush=True)
