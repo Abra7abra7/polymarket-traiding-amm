@@ -113,8 +113,10 @@ class ThresholdsConfig(BaseModel):
     tau: float = 0.87
     eps: float = 0.05
     min_probability: float = 0.01
+    trailing_stop_pct: float = 0.02
+    take_profit_pct: float = 0.03
 
-    @field_validator('tau', 'eps', 'min_probability')
+    @field_validator('tau', 'eps', 'min_probability', 'trailing_stop_pct', 'take_profit_pct')
     @classmethod
     def check_range(cls, v: float) -> float:
         if not (0.0 < v <= 1.0):
