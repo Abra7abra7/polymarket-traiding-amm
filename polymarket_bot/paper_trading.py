@@ -222,7 +222,7 @@ class PaperTradingEngine(BaseExchangeClient):
         # Return simulated cash balance
         return self.current_balance
 
-    async def buy(self, market_id: str, outcome_id: int = 0, price: Optional[float] = None, amount: int = 1, order_type: str = "limit") -> Optional[Dict]:
+    async def buy(self, market_id: str, outcome_id: int = 0, price: Optional[float] = None, amount: int = 1, order_type: str = "limit", **kwargs) -> Optional[Dict]:
         """Simulate buy — creates/augments long position.
         
         Args:
@@ -299,8 +299,10 @@ class PaperTradingEngine(BaseExchangeClient):
         self._save_state()
         return {"filled": True, "price": fill_price, "quantity": quantity, "status": "filled", "order_id": pid, "side": "buy"}
 
-    async def sell(self, market_id: str, outcome_id: int = 0, price: Optional[float] = None, amount: int = 1, order_type: str = "limit", asset: Optional[str] = None, window: Optional[str] = None) -> Optional[Dict]:
+    async def sell(self, market_id: str, outcome_id: int = 0, price: Optional[float] = None, amount: int = 1, order_type: str = "limit", **kwargs) -> Optional[Dict]:
         """Simulate sell — exits long or opens short."""
+        asset = kwargs.get('asset')
+        window = kwargs.get('window')
         if asset is None:
             asset = market_id.split('_')[0]
         pid = f"{asset}:{outcome_id}"

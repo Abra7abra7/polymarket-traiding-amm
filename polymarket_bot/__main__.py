@@ -53,7 +53,9 @@ class TradingBot:
         self.client = None
         self.decision_engine = DecisionEngine(
             tau=self.config.trading.thresholds.tau,
-            eps=self.config.trading.thresholds.eps
+            eps=self.config.trading.thresholds.eps,
+            stop_loss_pct=self.config.trading.thresholds.trailing_stop_pct,
+            take_profit_pct=getattr(self.config.trading.thresholds, 'take_profit_pct', 0.03)
         )
 
         self.matrices: Dict[str, TransitionMatrix] = {}
@@ -174,7 +176,9 @@ class TradingBot:
                         "window": window,
                         "entry_price": price, 
                         "shares": shares,
-                        "entry_time": datetime.now(timezone.utc).isoformat()
+                        "entry_time": datetime.now(timezone.utc).isoformat(),
+                        "max_price": price,
+                        "current_price": price
                     }
                     self.daily_trades_count += 1
                     self.stats["trades_entered"] += 1
@@ -191,6 +195,10 @@ class TradingBot:
                 market_id = resolve_market_id(asset_cfg, pos['window'])
                 price = await self.client.get_ticker(market_id)
                 
+                # Update tracking metrics
+                pos['current_price'] = price
+                pos['max_price'] = max(pos.get('max_price', 0), price)
+                
                 # Full strategy exit check
                 exit_info = self.decision_engine.should_exit(
                     entry_price=pos['entry_price'], 
@@ -198,7 +206,8 @@ class TradingBot:
                     current_price=price, 
                     p_hat=pos.get('p_hat', 0.5),
                     days_to_expiry=int(get_window_duration_days(pos['window'])),
-                    sigma=get_market_volatility(asset_cfg)
+                    sigma=get_market_volatility(asset_cfg),
+                    max_price=pos.get('max_price', 0)
                 )
 
                 if exit_info['exit']:

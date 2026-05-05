@@ -9,7 +9,7 @@ CONFIG     = BASE_DIR / "config/config.yaml"
 PID_FILE   = Path("/tmp/amm_bot_24h.pid")
 LOG_FILE   = Path("/tmp/amm_bot_24h.log")
 REPORT_DIR = BASE_DIR / "reports"
-HEALTH_URL = "http://localhost:8087/health/ready"
+HEALTH_URL = "http://localhost:8089/health/ready"
 
 MAX_RESTARTS_PER_HOUR = 5
 RESTART_COOLDOWN      = 5
@@ -62,10 +62,12 @@ def start_bot() -> subprocess.Popen | None:
 def is_healthy() -> bool:
     try:
         import requests
-        r = requests.get(HEALTH_URL, timeout=3)
+        r = requests.get(HEALTH_URL, timeout=5)
         if r.status_code == 200:
             data = r.json()
-            return data.get("status") == "ok" and data.get("matrices", 0) >= 1
+            # Accept both "ok" (standard) and "ready" (our bot's implementation)
+            status = data.get("status")
+            return status in ["ok", "ready"] and data.get("matrices", 0) >= 1
     except Exception:
         pass
     return False

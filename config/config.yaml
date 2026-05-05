@@ -203,3 +203,4 @@ trading:
     p_hat_exit: 0.45
     tau: 0.05
     trailing_stop_pct: 0.02
+    take_profit_pct: 0.10      # 10% target to cover high fees (7% friction)

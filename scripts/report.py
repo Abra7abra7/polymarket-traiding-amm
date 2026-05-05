@@ -49,7 +49,9 @@ def generate_report():
         positions = data.get("positions", {})
         holdings_value = 0.0
         for pos in positions.values():
-            holdings_value += pos.get('shares', 0) * pos.get('entry_price', 0.0)
+            # Use current_price if available, else entry_price
+            current_price = pos.get('current_price', pos.get('entry_price', 0.0))
+            holdings_value += pos.get('shares', 0) * current_price
         
         total_equity = cash + holdings_value
         unrealized_pnl = total_equity - initial_balance - realized_pnl
@@ -85,15 +87,16 @@ def generate_report():
         if not positions:
             print("   >>> No active positions at the moment.")
         else:
-            print(f"   {'ASSET':<12} {'WINDOW':<8} {'SHARES':<10} {'ENTRY':<10} {'VALUE':<12}")
-            print(f"   {'-'*55}")
+            print(f"   {'ASSET':<12} {'WINDOW':<8} {'SHARES':<8} {'ENTRY':<10} {'CURRENT':<10} {'P/L':<12}")
+            print(f"   {'-'*65}")
             for pid, pos in positions.items():
                 asset = pos.get('asset', '???')
                 window = pos.get('window', '???')
                 shares = pos.get('shares', 0)
                 entry = pos.get('entry_price', 0.0)
-                val = shares * entry
-                print(f"   {asset:<12} {window:<8} {shares:<10} {format_plain(entry):<10} {format_plain(val):<12}")
+                current = pos.get('current_price', entry)
+                pnl = (current - entry) * shares
+                print(f"   {asset:<12} {window:<8} {shares:<8} {format_plain(entry):<10} {format_plain(current):<10} {format_currency(pnl):<12}")
 
         # 4. Bot Health
         print(f"\n[ SYSTEM STATUS ]")

@@ -20,12 +20,16 @@ class DecisionEngine:
     def __init__(self,
                  tau: float = 0.87,
                  eps: float = 0.05,
-                 min_probability: float = 0.01):
+                 min_probability: float = 0.01,
+                 stop_loss_pct: float = 0.02,
+                 take_profit_pct: float = 0.03):
         """
         Args:
             tau: Persistence threshold (diagonal element must exceed this)
             eps: Gap threshold (model-market difference must exceed this)
             min_probability: Minimum probability to consider (avoid noise near 0)
+            stop_loss_pct: Percentage loss to trigger exit (e.g., 0.02 for 2%)
+            take_profit_pct: Percentage gain to trigger exit (e.g., 0.10 for 10%)
         """
         # Validate thresholds
         if not (0 < tau <= 1):
@@ -38,6 +42,8 @@ class DecisionEngine:
         self.tau = tau
         self.eps = eps
         self.min_probability = min_probability
+        self.stop_loss_pct = stop_loss_pct
+        self.take_profit_pct = take_profit_pct
 
         # Kelly caps – mutable via direct assignment (tests tweak these)
         self.kelly_cap_max = 0.80
@@ -255,14 +261,10 @@ class DecisionEngine:
         return result
     def should_exit(self, entry_price: float, entry_shares: int,
                     current_price: float, p_hat: float,
-                    days_to_expiry: int, sigma: float = 0.03) -> dict:
+                    days_to_expiry: int, sigma: float = 0.03,
+                    max_price: float = 0.0) -> dict:
         """
         Bellman optimal stopping decision for exiting an existing position.
-
-        Computes fair value V_t using backward induction. If current_price >= V_t,
-        it is optimal to stop (sell). If current_price << V_t, hold.
-
-        Also implements trailing stop loss and take-profit tiers.
 
         Args:
             entry_price: Price at which the position was opened
@@ -271,46 +273,48 @@ class DecisionEngine:
             p_hat: Your model's current probability estimate
             days_to_expiry: Days until market resolution
             sigma: Daily volatility (default 0.03)
+            max_price: Maximum price seen since entry (for trailing stop)
 
         Returns:
             dict with keys: exit (bool), fair_value, edge, reason
         """
-        # --- Trailing stop loss (2% drawdown from entry) ---
-        unrealized = (current_price - entry_price) / entry_price if entry_price > 0 else 0.0
-        if unrealized <= -0.02:
+        # --- True Trailing Stop Loss (drawdown from MAX price) ---
+        reference_price = max(entry_price, max_price)
+        drawdown = (current_price - reference_price) / reference_price if reference_price > 0 else 0.0
+        
+        if drawdown <= -self.stop_loss_pct:
             return {
                 "exit": True,
                 "fair_value": None,
                 "current_price": current_price,
-                "edge": round(unrealized * entry_price * entry_shares, 4),
-                "reason": "trailing_stop_2pct",
+                "edge": round((current_price - entry_price) * entry_shares, 4),
+                "reason": f"trailing_stop_{int(self.stop_loss_pct*100)}pct",
                 "entry_price": entry_price,
                 "entry_shares": entry_shares,
                 "potential_pnl_per_share": round(current_price - entry_price, 4),
-                "unrealized_pct": round(unrealized * 100, 2),
+                "unrealized_pct": round(((current_price - entry_price) / entry_price) * 100, 2),
             }
 
         # --- Take-profit tiers ---
-        if unrealized >= 0.03:
+        unrealized = (current_price - entry_price) / entry_price if entry_price > 0 else 0.0
+        if unrealized >= self.take_profit_pct:
             return {
                 "exit": True,
                 "fair_value": None,
                 "current_price": current_price,
                 "edge": round(unrealized * entry_price * entry_shares, 4),
-                "reason": "take_profit_3pct",
+                "reason": f"take_profit_{int(self.take_profit_pct*100)}pct",
                 "entry_price": entry_price,
                 "entry_shares": entry_shares,
                 "potential_pnl_per_share": round(current_price - entry_price, 4),
                 "unrealized_pct": round(unrealized * 100, 2),
             }
 
-        # --- Bellman optimal stopping (original logic) ---
+        # --- Bellman optimal stopping ---
         solver = BellmanSolver(p_true=p_hat, sigma=sigma, T=days_to_expiry)
         fair_value = solver._approx_american_binary()
 
         edge = fair_value - current_price
-
-        # Exit if market price exceeds fair value (1 cent buffer for fees)
         exit_signal = current_price >= fair_value - 0.01
 
         return {
