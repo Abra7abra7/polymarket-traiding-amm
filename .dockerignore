@@ -1,0 +1,15 @@
+.git
+.gitignore
+.pytest_cache
+.agents
+__pycache__
+*.pyc
+*.log
+venv
+.env
+tests
+docs
+AGENTS.md
+README.md
+scripts/install_service.sh
+deploy/
