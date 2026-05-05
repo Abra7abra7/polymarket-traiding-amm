@@ -29,16 +29,16 @@ monitoring:
     port: 9093
   metrics_port: 9093
   partial_fill_prob: 0.1
-  slippage_bps: 50
-  spread_bps: 200
+  slippage_bps: 30
+  spread_bps: 50
 paper_trading:
   data_dir: ~/.trading_bot
   fill_latency_ms: 200
   initial_balance: 5000.0
   partial_fill_prob: 0.1
-  slippage_bps: 50
-  spread_bps: 200
-  swap_fee_bps: 200          # 2% swap fee (Polymarket AMM fee)
+  slippage_bps: 30
+  spread_bps: 50
+  swap_fee_bps: 150          # 1.5% swap fee (Polymarket AMM fee)
   gas_fee_usd: 0.01           # gas fee on Polygon (~$0.01 per trade)
 risk:
   kill_switches:
