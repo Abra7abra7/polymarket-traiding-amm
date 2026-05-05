@@ -41,7 +41,10 @@ def generate_report():
         print("="*70)
 
         # 1. Financial Summary
-        cash = data.get("portfolio_value", 0.0) # In code, this is actually the liquid cash
+        cash = data.get("portfolio_value", 0.0)
+        # If cash is 0 but it's a fresh start, use initial_balance
+        if cash == 0 and not data.get("positions"):
+            cash = initial_balance
         stats = data.get("stats", {})
         realized_pnl = stats.get("total_pnl", 0.0)
         

@@ -60,7 +60,7 @@ class TradingBot:
 
         self.matrices: Dict[str, TransitionMatrix] = {}
         self.positions: Dict[str, dict] = {}
-        self.portfolio_value = 0.0
+        self.portfolio_value = self.config.paper_trading.initial_balance if self.config.app.paper_trading else 0.0
         self.running = False
         
         self.shutdown_event = asyncio.Event()
@@ -180,9 +180,11 @@ class TradingBot:
                         "max_price": price,
                         "current_price": price
                     }
+                    cost = shares * price
+                    self.portfolio_value -= cost
                     self.daily_trades_count += 1
                     self.stats["trades_entered"] += 1
-                    self.logger.info("Trade entered", asset=asset, price=price, shares=shares)
+                    self.logger.info("Trade entered", asset=asset, price=price, shares=shares, cost=cost)
         except Exception as e:
             self.logger.error("Evaluation failed", asset=asset, error=str(e))
 
@@ -222,10 +224,17 @@ class TradingBot:
                     )
                     if order:
                         to_close.append(oid)
+                        proceeds = pos['shares'] * price
+                        self.portfolio_value += proceeds
+                        pnl = proceeds - (pos['shares'] * pos['entry_price'])
+                        self.stats["total_pnl"] = self.stats.get("total_pnl", 0.0) + pnl
+                        self.stats["trades_settled"] = self.stats.get("trades_settled", 0) + 1
+                        
                         self.logger.info("Position closed", 
                                          asset=pos['asset'], 
                                          reason=exit_info['reason'], 
-                                         pnl=exit_info.get('unrealized_pct'))
+                                         pnl=pnl,
+                                         proceeds=proceeds)
             except Exception as e:
                 self.logger.error("Exit failed", order_id=oid, error=str(e))
         
