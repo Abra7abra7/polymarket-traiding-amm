@@ -43,9 +43,10 @@ def inspect_matrices(checkpoint_path: str):
     print("="*80)
 
     for market_id, m_info in matrices_data.items():
-        # m_info is usually a dict with 'P', 'counts', 'total_transitions', etc.
+        # Buffer contains the actual transitions
+        buffer_data = m_info.get("buffer", [])
+        total = len(buffer_data)
         p_matrix = m_info.get("P")
-        total = m_info.get("total_transitions", 0)
         is_valid = m_info.get("is_valid", False)
         
         status = "✅ READY" if is_valid else "⏳ TRAINING"
