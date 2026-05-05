@@ -10,12 +10,13 @@ Tests:
 
 import pytest
 import time
+import asyncio
 from unittest.mock import patch, MagicMock
 from polymarket_bot.monitoring.metrics import MetricsExporter
 
 
 class DummyMonitoringConfig:
-    metrics_port = 9092
+    port = 0
     metrics_path = "/metrics"
 
 
@@ -42,7 +43,6 @@ class TestMetricRecording:
 
     async def test_portfolio_value_set(self):
         cfg = DummyMonitoringConfig()
-        cfg.metrics_port = 9101
         exporter = MetricsExporter(cfg)
         exporter.portfolio_value(12345.67)
         # Get the underlying Prometheus Gauge value
@@ -52,7 +52,6 @@ class TestMetricRecording:
 
     async def test_open_positions_set(self):
         cfg = DummyMonitoringConfig()
-        cfg.metrics_port = 9102
         exporter = MetricsExporter(cfg)
         exporter.open_positions(5)
         gauge = exporter._metrics["open_positions"]
@@ -61,7 +60,6 @@ class TestMetricRecording:
 
     async def test_trade_counter_inc(self):
         cfg = DummyMonitoringConfig()
-        cfg.metrics_port = 9103
         exporter = MetricsExporter(cfg)
         exporter.record_trade(asset="BTC", window="5m", entry_price=50000, shares=10, p_hat=0.7, persist=0.93)
         counter = exporter._metrics["trades"]
@@ -71,7 +69,6 @@ class TestMetricRecording:
 
     async def test_p_hat_gauge_updates(self):
         cfg = DummyMonitoringConfig()
-        cfg.metrics_port = 9104
         exporter = MetricsExporter(cfg)
         exporter.record_p_hat("ETH", "1h", 0.82)
         gauge = exporter._metrics["p_hat"]
@@ -80,7 +77,6 @@ class TestMetricRecording:
 
     async def test_gap_gauge_updates(self):
         cfg = DummyMonitoringConfig()
-        cfg.metrics_port = 9105
         exporter = MetricsExporter(cfg)
         exporter.record_gap("BTC", "5m", 0.07)
         gauge = exporter._metrics["gap"]
@@ -89,7 +85,6 @@ class TestMetricRecording:
 
     async def test_error_counter_inc(self):
         cfg = DummyMonitoringConfig()
-        cfg.metrics_port = 9106
         exporter = MetricsExporter(cfg)
         exporter.record_error("order_failed")
         counter = exporter._metrics["errors"]
@@ -98,7 +93,6 @@ class TestMetricRecording:
 
     async def test_multiple_errors_increment(self):
         cfg = DummyMonitoringConfig()
-        cfg.metrics_port = 9107
         exporter = MetricsExporter(cfg)
         for _ in range(5):
             exporter.record_error("timeout")
@@ -116,21 +110,20 @@ class TestMetricsHttpEndpoint:
         import time
 
         cfg = DummyMonitoringConfig()
-        cfg.metrics_port = 9108
         exporter = MetricsExporter(cfg)
 
         # Wait for server to start
         await asyncio.sleep(0.5)
 
-        url = f"http://127.0.0.1:{cfg.metrics_port}{cfg.metrics_path}"
+        url = f"http://127.0.0.1:{exporter.port}{cfg.metrics_path}"
         try:
             with urllib.request.urlopen(url, timeout=3) as resp:
                 body = resp.read().decode()
                 assert resp.status == 200
                 assert "trading_bot_portfolio_value_usd" in body
                 assert "trading_bot_open_positions_count" in body
-        except ConnectionRefusedError:
-            pytest.fail("Metrics server not listening on port")
+        except Exception as e:
+            pytest.fail(f"Metrics server error: {e}")
         finally:
             await exporter.stop()
 
@@ -139,13 +132,12 @@ class TestMetricsHttpEndpoint:
         import time
 
         cfg = DummyMonitoringConfig()
-        cfg.metrics_port = 9109
         exporter = MetricsExporter(cfg)
         exporter.record_trade("BTC", "5m", 50000, 10, 0.7, 0.93)
 
         await asyncio.sleep(0.5)
 
-        url = f"http://127.0.0.1:{cfg.metrics_port}{cfg.metrics_path}"
+        url = f"http://127.0.0.1:{exporter.port}{cfg.metrics_path}"
         try:
             with urllib.request.urlopen(url, timeout=3) as resp:
                 body = resp.read().decode()

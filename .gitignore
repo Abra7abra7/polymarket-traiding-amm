@@ -40,3 +40,6 @@ scratch/
 .gemini/
 .trading_bot/
 .env*
+.coverage
+.pytest_cache/
+htmlcov/

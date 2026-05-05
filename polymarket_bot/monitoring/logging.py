@@ -5,7 +5,9 @@ Uses structlog for JSON output with consistent fields.
 """
 
 import logging
+import logging.handlers
 import sys
+import os
 from typing import Optional
 import structlog
 
@@ -58,6 +60,32 @@ def setup_logging(cfg) -> structlog.BoundLogger:
     )
 
     logger = structlog.get_logger("trading_bot")
+
+    # Add file handler if configured
+    log_file = getattr(cfg, 'log_file', None)
+    if log_file:
+        from datetime import datetime
+        log_file = os.path.expanduser(log_file)
+        log_file = datetime.now().strftime(log_file)
+        try:
+            # Ensure directory exists
+            log_dir = os.path.dirname(log_file)
+            if log_dir:
+                os.makedirs(log_dir, exist_ok=True)
+            
+            # Add rotating file handler
+            file_handler = logging.handlers.RotatingFileHandler(
+                log_file,
+                maxBytes=10 * 1024 * 1024,  # 10MB
+                backupCount=5
+            )
+            file_handler.setFormatter(logging.Formatter("%(message)s"))
+            root.addHandler(file_handler)
+            logger.info("File logging initialized", path=log_file)
+        except Exception as e:
+            # Fallback to stderr if file logging fails, don't crash
+            print(f"Failed to initialize file logging: {e}", file=sys.stderr)
+
     # Expose a public `.name` attribute for tests / introspection
     object.__setattr__(logger, "name", "trading_bot")
 

@@ -20,9 +20,9 @@ from polymarket_bot import __main__ as bot_main
 from polymarket_bot.config.loader import load_config
 
 
-pytestmark = pytest.mark.asyncio
 
 
+@pytest.mark.asyncio
 class TestBotInitialization:
     """Test bot startup sequence."""
 
@@ -62,6 +62,7 @@ class TestBotInitialization:
         await bot.shutdown()
 
 
+@pytest.mark.asyncio
 class TestBotEvaluationCycle:
     """Test single evaluation cycle."""
 
@@ -111,6 +112,7 @@ class TestBotEvaluationCycle:
         await bot.shutdown()
 
 
+@pytest.mark.asyncio
 class TestBotShutdown:
     """Test graceful termination."""
 
@@ -136,6 +138,7 @@ class TestBotShutdown:
         assert bot.shutdown_event.is_set()
 
 
+@pytest.mark.asyncio
 class TestMonitoringEndpoints:
     """Test health and metrics servers are up."""
 
@@ -181,6 +184,7 @@ class TestMonitoringEndpoints:
         await bot.shutdown()
 
 
+@pytest.mark.asyncio
 class TestDryRunNoRealOrders:
     """Ensure dry-run never places real orders."""
 
@@ -203,6 +207,7 @@ class TestDryRunNoRealOrders:
         await bot.shutdown()
 
 
+@pytest.mark.asyncio
 class TestBotRunLoop:
     """Test the main evaluation loop (short run)."""
 

@@ -23,6 +23,11 @@ class _MetricsHandler(BaseHTTPRequestHandler):
             self.end_headers()
             # self.server.registry is set by MetricsExporter
             self.wfile.write(generate_latest(self.server.registry))
+        else:
+            self.send_response(404)
+            self.send_header('Content-Type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(b"Not Found. Use /metrics for Prometheus data.")
 
     def log_message(self, fmt, *args):
         pass  # Suppress request logs – noisy in tests
@@ -131,12 +136,15 @@ class MetricsExporter:
                 MetricsExporter._live.pop(port, None)
 
             # Build server (bind without auto-activate then set reuse)
-            self._server = socketserver.TCPServer(("", port), _MetricsHandler, bind_and_activate=False)
+            self._server = socketserver.TCPServer(("0.0.0.0", port), _MetricsHandler, bind_and_activate=False)
             self._server.allow_reuse_address = True
             self._server.registry = self.registry
             try:
                 self._server.server_bind()
                 self._server.server_activate()
+                # Capture actual port if port 0 was used
+                if self._port == 0:
+                    self._port = self._server.server_address[1]
             except OSError as e:
                 raise RuntimeError(f"Metrics server failed to bind port {port}: {e}") from e
 
@@ -154,8 +162,13 @@ class MetricsExporter:
         # Finalizer – runs when this instance is GC'd
         self._finalizer = weakref.finalize(self, self._cleanup, port)
 
+    @property
+    def port(self) -> int:
+        """Return the port the server is listening on."""
+        return self._port
+
     @staticmethod
-    def _resolve_port(cfg):
+    def _resolve_port(cfg) -> int:
         # Prefer nested metrics.port; fallback to top-level port; default 9090
         if hasattr(cfg, 'metrics') and hasattr(cfg.metrics, 'port'):
             return cfg.metrics.port

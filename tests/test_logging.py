@@ -105,7 +105,8 @@ class TestLogOutput:
         logger.info("trade_event", asset="BTC", window="5m", price=50000.0)
 
         captured = capsys.readouterr()
-        parsed = json.loads(captured.err.strip())
+        line = captured.err.strip().splitlines()[-1]
+        parsed = json.loads(line)
         assert parsed["asset"] == "BTC"
         assert parsed["window"] == "5m"
         assert parsed["price"] == 50000.0
@@ -153,7 +154,8 @@ class TestLoggerContext:
         bound.info("matrix updated", state=42)
 
         captured = capsys.readouterr()
-        parsed = json.loads(captured.err.strip())
+        line = captured.err.strip().splitlines()[-1]
+        parsed = json.loads(line)
         assert parsed["component"] == "matrix"
         assert parsed["step"] == "update"
         assert parsed["state"] == 42

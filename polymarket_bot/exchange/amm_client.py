@@ -55,7 +55,13 @@ class PolymarketAMMClient(BaseExchangeClient):
         **kwargs: Any,
     ) -> None:
         self.config = config
-        self.dry_run = dry_run
+        
+        # Prioritize dry_run from config if present
+        if config and hasattr(config, 'app') and hasattr(config.app, 'dry_run'):
+            self.dry_run = config.app.dry_run
+        else:
+            self.dry_run = dry_run
+            
         self.sandbox = sandbox
         self.gamma_base = amm_base_url or self.BASE_GAMMA
         self.router_address = to_checksum_address(router_address) if router_address else None

@@ -16,8 +16,8 @@ from polymarket_bot.monitoring.health import HealthServer
 
 
 class DummyMonitoringConfig:
-    # HealthServer uses 8086 in test mode
-    health_port = 8086
+    # Use port 0 for random free port to avoid conflicts in tests
+    health_port = 0
     health_live_path = "/health/live"
     health_ready_path = "/health/ready"
 
@@ -56,7 +56,7 @@ class TestHealthServer:
         await server.start()
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"http://127.0.0.1:{cfg.health_port}{cfg.health_live_path}") as resp:
+            async with session.get(f"http://127.0.0.1:{server.port}{cfg.health_live_path}") as resp:
                 assert resp.status == 200
                 data = await resp.json()
                 assert data["status"] == "ok"
@@ -71,7 +71,7 @@ class TestHealthServer:
         await server.start()
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"http://127.0.0.1:{cfg.health_port}{cfg.health_ready_path}") as resp:
+            async with session.get(f"http://127.0.0.1:{server.port}{cfg.health_ready_path}") as resp:
                 assert resp.status == 503
                 data = await resp.json()
                 assert data["status"] == "not_ready"
@@ -86,7 +86,7 @@ class TestHealthServer:
         await server.start()
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"http://127.0.0.1:{cfg.health_port}{cfg.health_ready_path}") as resp:
+            async with session.get(f"http://127.0.0.1:{server.port}{cfg.health_ready_path}") as resp:
                 assert resp.status == 503
                 data = await resp.json()
                 assert data["reason"] == "exchange_not_connected"
@@ -100,10 +100,13 @@ class TestHealthServer:
         await server.start()
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"http://127.0.0.1:{cfg.health_port}{cfg.health_ready_path}") as resp:
-                assert resp.status == 503
-                data = await resp.json()
-                assert data["reason"] == "no_matrices"
+            try:
+                async with session.get(f"http://127.0.0.1:{server.port}{cfg.health_ready_path}", timeout=2.0) as resp:
+                    assert resp.status == 503
+                    data = await resp.json()
+                    assert data["reason"] == "no_matrices"
+            except asyncio.TimeoutError:
+                pytest.fail("Health ready endpoint timed out")
 
         await server.stop()
 
@@ -114,7 +117,7 @@ class TestHealthServer:
         await server.start()
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"http://127.0.0.1:{cfg.health_port}{cfg.health_ready_path}") as resp:
+            async with session.get(f"http://127.0.0.1:{server.port}{cfg.health_ready_path}") as resp:
                 assert resp.status == 200
                 data = await resp.json()
                 assert data["status"] == "ready"
@@ -145,7 +148,7 @@ class TestHealthJsonFormat:
         await server.start()
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"http://127.0.0.1:{cfg.health_port}{cfg.health_live_path}") as resp:
+            async with session.get(f"http://127.0.0.1:{server.port}{cfg.health_live_path}") as resp:
                 data = await resp.json()
                 assert set(data.keys()) == {"status", "timestamp"}
 
@@ -158,7 +161,7 @@ class TestHealthJsonFormat:
         await server.start()
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"http://127.0.0.1:{cfg.health_port}{cfg.health_ready_path}") as resp:
+            async with session.get(f"http://127.0.0.1:{server.port}{cfg.health_ready_path}") as resp:
                 data = await resp.json()
                 keys = set(data.keys())
                 assert keys >= {"status", "matrices", "open_positions", "timestamp"}

@@ -36,6 +36,11 @@ class HealthServer:
         self.site: Optional[web.TCPSite] = None
         self._finalizer: Optional[weakref.finalize] = None
 
+    @property
+    def port(self) -> int:
+        """Return the port the server is listening on."""
+        return self._port
+
     @staticmethod
     def _resolve_port(cfg):
         if hasattr(cfg, "health_port"):
@@ -65,8 +70,8 @@ class HealthServer:
             {"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()}
         )
 
-    async def _handle_ready(self, request):
-        """Readiness probe — checks bot state."""
+    async def _handle_ready(self, request: web.Request) -> web.Response:
+        """Liveness probe: check if bot is initialized and connected."""
         # Bot must be running
         if not getattr(self.bot, "running", False):
             return web.json_response(
@@ -106,66 +111,66 @@ class HealthServer:
 
     async def start(self) -> None:
         """Start HTTP server (non-blocking)."""
-        async with HealthServer._lock:
-            # Clean up any previous server on same port
-            if self._port in HealthServer._live:
-                prev = HealthServer._live[self._port]
-                try:
-                    if prev.get("site") is not None:
-                        await prev["site"].stop()
-                except Exception:
-                    pass
-                try:
-                    await prev["runner"].cleanup()
-                except Exception:
-                    pass
-                HealthServer._live.pop(self._port, None)
-                await asyncio.sleep(0.5)  # let OS release socket
+        # Clean up any previous server on same port if possible
+        if self._port in HealthServer._live:
+            prev = HealthServer._live[self._port]
+            try:
+                p_site = prev.get("site")
+                if p_site:
+                    await p_site.stop()
+            except Exception:
+                pass
+            try:
+                await prev["runner"].cleanup()
+            except Exception:
+                pass
+            HealthServer._live.pop(self._port, None)
 
-            # Create and start new server
-            self.runner = web.AppRunner(self.app)
-            await self.runner.setup()
+        # Create and start new server
+        self.runner = web.AppRunner(self.app)
+        await self.runner.setup()
 
-            # Brief pause before bind
-            await asyncio.sleep(0.1)
+        self.site = web.TCPSite(self.runner, "0.0.0.0", self._port)
+        await self.site.start()
 
-            self.site = web.TCPSite(self.runner, "127.0.0.1", self._port)
-            await self.site.start()
+        # Capture actual port if we requested port 0
+        if self._port == 0 and self.site._server is not None:
+            for socket in self.site._server.sockets:
+                address = socket.getsockname()
+                if address:
+                    self._port = address[1]
+                    break
 
-            # Wait to ensure socket is accepting connections
-            await asyncio.sleep(0.5)
-
-            # Register in live map
-            HealthServer._live[self._port] = {
-                "runner": self.runner,
-                "site": self.site,
-                "ref": weakref.ref(self),
-            }
+        # Register in live map
+        HealthServer._live[self._port] = {
+            "runner": self.runner,
+            "site": self.site,
+            "ref": weakref.ref(self),
+        }
 
         # Finalizer will clean up when this object is GC'd
         self._finalizer = weakref.finalize(self, self._cleanup, self._port)
 
     async def stop(self) -> None:
         """Gracefully stop HTTP server and clear from live registry."""
-        async with HealthServer._lock:
-            entry = HealthServer._live.get(self._port)
-            if entry and entry.get("runner") is self.runner:
-                # Stop site first
-                try:
-                    if self.site is not None:
-                        await self.site.stop()
-                except Exception:
-                    pass
-                # Then cleanup runner
-                try:
-                    await self.runner.cleanup()
-                except Exception:
-                    pass
-                self.runner = None
-                self.site = None
-                HealthServer._live.pop(self._port, None)
-                # Brief yield to allow loop to close sockets
-                await asyncio.sleep(0.05)
+        entry = HealthServer._live.get(self._port)
+        if entry and entry.get("runner") is self.runner:
+            # Stop site first
+            try:
+                if self.site is not None:
+                    await self.site.stop()
+            except Exception:
+                pass
+            # Then cleanup runner
+            try:
+                await self.runner.cleanup()
+            except Exception:
+                pass
+            self.runner = None
+            self.site = None
+            HealthServer._live.pop(self._port, None)
+            # Brief yield to allow loop to close sockets
+            await asyncio.sleep(0.05)
 
     @classmethod
     async def _async_cleanup(cls, port: int) -> None:
