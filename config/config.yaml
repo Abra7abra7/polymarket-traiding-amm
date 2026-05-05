@@ -61,245 +61,137 @@ storage:
     prefix: 'trading:'
 trading:
   assets:
-    BNB_15M:
-      enabled: false
-      symbol: BNB
-      windows:
-      - 15m
-    BNB_1D:
-      enabled: false
-      symbol: BNB
-      windows:
-      - 1d
-    BNB_1H:
-      enabled: false
-      symbol: BNB
-      windows:
-      - 1h
-    BNB_1M:
-      enabled: false
-      symbol: BNB
-      windows:
-      - 1m
-    BNB_1W:
-      enabled: false
-      symbol: BNB
-      windows:
-      - 1w
-    BNB_4H:
-      enabled: false
-      symbol: BNB
-      windows:
-      - 4h
-    BNB_5M:
-      enabled: false
-      symbol: BNB
-      windows:
-      - 5m
-    BTC_15M:
-      condition_id: '0xf7086e2218ce1c3a61ba10ec8f1086964f1281f78a216da02795865b4770c8bd'
-      enabled: true
-      symbol: BTC
-      windows:
-        - 15m
-    BTC_1D:
-      enabled: false
-      symbol: BTC
-      windows:
-      - 1d
-    BTC_1H:
-      condition_id: '0x0e51ac223902a7b65197aebd6729c21b2de77c7d86c309e8c39762bd99477a81'
-      enabled: true
-      symbol: BTC
-      windows:
-      - 1h
-    BTC_1M:
-      enabled: false
-      symbol: BTC
-      windows:
-      - 1m
-    BTC_1W:
-      enabled: false
-      symbol: BTC
-      windows:
-      - 1w
-    BTC_4H:
-      condition_id: '0xc01cde6f78bdab324d6ca29b617eb180e6890262691d005768d07f5ff86b4110'
-      enabled: true
-      symbol: BTC
-      windows:
-        - 4h
+    BNB_5M: { enabled: false, symbol: BNB, windows: [5m] }
+    BNB_15M: { enabled: false, symbol: BNB, windows: [15m] }
+    BNB_1H: { enabled: false, symbol: BNB, windows: [1h] }
+    BNB_4H: { enabled: false, symbol: BNB, windows: [4h] }
+    BNB_1D: { enabled: false, symbol: BNB, windows: [1d] }
+    BNB_1W: { enabled: false, symbol: BNB, windows: [1w] }
+    BNB_1M: { enabled: false, symbol: BNB, windows: [1M] }
+    BNB_1Y: { enabled: false, symbol: BNB, windows: [1Y] }
+
     BTC_5M:
       condition_id: '0xe718f96652b0123ed430993507ab3c4ee80c8abdd0c8ab1da400598c289d12cf'
       enabled: true
       symbol: BTC
-      windows:
-      - 5m
-    DOGE_15M:
-      enabled: false
-      symbol: DOGE
-      windows:
-      - 15m
-    DOGE_1D:
-      enabled: false
-      symbol: DOGE
-      windows:
-      - 1d
-    DOGE_1H:
-      enabled: false
-      symbol: DOGE
-      windows:
-      - 1h
-    DOGE_1M:
-      enabled: false
-      symbol: DOGE
-      windows:
-      - 1m
-    DOGE_1W:
-      enabled: false
-      symbol: DOGE
-      windows:
-      - 1w
-    DOGE_4H:
-      enabled: false
-      symbol: DOGE
-      windows:
-      - 4h
-    DOGE_5M:
-      enabled: false
-      symbol: DOGE
-      windows:
-      - 5m
-    ETH_15M:
-      condition_id: '0xcc5a3447e1bf14981a1e772851b7135b23d8bf1edac04d1c39b3636f85044c04'
+      windows: [5m]
+    BTC_15M:
+      condition_id: '0xf7086e2218ce1c3a61ba10ec8f1086964f1281f78a216da02795865b4770c8bd'
       enabled: true
-      symbol: ETH
-      windows:
-        - 15m
-    ETH_1D:
-      enabled: false
-      symbol: ETH
-      windows:
-      - 1d
-    ETH_1H:
-      condition_id: '0x80d8da05b0363caa86663e5c4086858855871cc5ecfc5b3184e8d1269e935a36'
+      symbol: BTC
+      windows: [15m]
+    BTC_1H:
+      condition_id: '0x0e51ac223902a7b65197aebd6729c21b2de77c7d86c309e8c39762bd99477a81'
       enabled: true
-      symbol: ETH
-      windows:
-      - 1h
-    ETH_1M:
-      enabled: false
-      symbol: ETH
-      windows:
-      - 1m
-    ETH_1W:
-      enabled: false
-      symbol: ETH
-      windows:
-      - 1w
-    ETH_4H:
-      condition_id: '0x9b3bed5b6884fc90605c9de49fe3e240bff35d5779640cdc7d12e4ec5a06cc22'
+      symbol: BTC
+      windows: [1h]
+    BTC_4H:
+      condition_id: '0xc01cde6f78bdab324d6ca29b617eb180e6890262691d005768d07f5ff86b4110'
       enabled: true
-      symbol: ETH
-      windows:
-        - 4h
+      symbol: BTC
+      windows: [4h]
+    BTC_1D:
+      condition_id: '0x..._PLACEHOLDER_BTC_1D'
+      enabled: true
+      symbol: BTC
+      windows: [1d]
+    BTC_1W:
+      condition_id: '0x..._PLACEHOLDER_BTC_1W'
+      enabled: true
+      symbol: BTC
+      windows: [1w]
+    BTC_1M:
+      condition_id: '0x..._PLACEHOLDER_BTC_1M'
+      enabled: true
+      symbol: BTC
+      windows: [1M]
+    BTC_1Y:
+      condition_id: '0x..._PLACEHOLDER_BTC_1Y'
+      enabled: true
+      symbol: BTC
+      windows: [1Y]
+
     ETH_5M:
       condition_id: '0x6e8fd545fd885b615e00b70952c49a46a89e6b8625d4af7ddd85c0ba5734f171'
       enabled: true
       symbol: ETH
-      windows:
-      - 5m
-    HYPE_5M:
-      condition_id: '0x14dcb704699422d65388dcf87a613bcdfea75436a86fac72ba13002dbc46fefa'
-      enabled: false
-      symbol: HYPE
-      windows:
-      - 5m
-    SOL_15M:
-      enabled: false
-      symbol: SOL
-      windows:
-      - 15m
-    SOL_1D:
-      enabled: false
-      symbol: SOL
-      windows:
-      - 1d
-    SOL_1H:
-      enabled: false
-      symbol: SOL
-      windows:
-      - 1h
-    SOL_1M:
-      enabled: false
-      symbol: SOL
-      windows:
-      - 1m
-    SOL_1W:
-      enabled: false
-      symbol: SOL
-      windows:
-      - 1w
-    SOL_4H:
-      enabled: false
-      symbol: SOL
-      windows:
-      - 4h
-    SOL_5M:
-      condition_id: '0x9865122bf8ba7838c258b0221e85a99fd460f6ad8f2460e07cb951ef24756903'
-      enabled: false
-      symbol: SOL
-      windows:
-      - 5m
-    XRP_15M:
-      enabled: false
-      symbol: XRP
-      windows:
-      - 15m
-    XRP_1D:
-      enabled: false
-      symbol: XRP
-      windows:
-      - 1d
-    XRP_1H:
-      enabled: false
-      symbol: XRP
-      windows:
-      - 1h
-    XRP_1M:
-      enabled: false
-      symbol: XRP
-      windows:
-      - 1m
-    XRP_1W:
-      enabled: false
-      symbol: XRP
-      windows:
-      - 1w
-    XRP_4H:
-      enabled: false
-      symbol: XRP
-      windows:
-      - 4h
-    XRP_5M:
-      enabled: false
-      symbol: XRP
-      windows:
-      - 5m
-  execution:
-    order_type: limit
+      windows: [5m]
+    ETH_15M:
+      condition_id: '0xcc5a3447e1bf14981a1e772851b7135b23d8bf1edac04d1c39b3636f85044c04'
+      enabled: true
+      symbol: ETH
+      windows: [15m]
+    ETH_1H:
+      condition_id: '0x80d8da05b0363caa86663e5c4086858855871cc5ecfc5b3184e8d1269e935a36'
+      enabled: true
+      symbol: ETH
+      windows: [1h]
+    ETH_4H:
+      condition_id: '0x9b3bed5b6884fc90605c9de49fe3e240bff35d5779640cdc7d12e4ec5a06cc22'
+      enabled: true
+      symbol: ETH
+      windows: [4h]
+    ETH_1D:
+      condition_id: '0x..._PLACEHOLDER_ETH_1D'
+      enabled: true
+      symbol: ETH
+      windows: [1d]
+    ETH_1W:
+      condition_id: '0x..._PLACEHOLDER_ETH_1W'
+      enabled: true
+      symbol: ETH
+      windows: [1w]
+    ETH_1M:
+      condition_id: '0x..._PLACEHOLDER_ETH_1M'
+      enabled: true
+      symbol: ETH
+      windows: [1M]
+    ETH_1Y:
+      condition_id: '0x..._PLACEHOLDER_ETH_1Y'
+      enabled: true
+      symbol: ETH
+      windows: [1Y]
+
+    SOL_5M: { enabled: false, symbol: SOL, windows: [5m] }
+    SOL_15M: { enabled: false, symbol: SOL, windows: [15m] }
+    SOL_1H: { enabled: false, symbol: SOL, windows: [1h] }
+    SOL_4H: { enabled: false, symbol: SOL, windows: [4h] }
+    SOL_1D: { enabled: false, symbol: SOL, windows: [1d] }
+    SOL_1W: { enabled: false, symbol: SOL, windows: [1w] }
+    SOL_1M: { enabled: false, symbol: SOL, windows: [1M] }
+    SOL_1Y: { enabled: false, symbol: SOL, windows: [1Y] }
+
+    XRP_5M: { enabled: false, symbol: XRP, windows: [5m] }
+    XRP_15M: { enabled: false, symbol: XRP, windows: [15m] }
+    XRP_1H: { enabled: false, symbol: XRP, windows: [1h] }
+    XRP_4H: { enabled: false, symbol: XRP, windows: [4h] }
+    XRP_1D: { enabled: false, symbol: XRP, windows: [1d] }
+    XRP_1W: { enabled: false, symbol: XRP, windows: [1w] }
+    XRP_1M: { enabled: false, symbol: XRP, windows: [1M] }
+    XRP_1Y: { enabled: false, symbol: XRP, windows: [1Y] }
+
+    DOGE_5M: { enabled: false, symbol: DOGE, windows: [5m] }
+    DOGE_15M: { enabled: false, symbol: DOGE, windows: [15m] }
+    DOGE_1H: { enabled: false, symbol: DOGE, windows: [1h] }
+    DOGE_4H: { enabled: false, symbol: DOGE, windows: [4h] }
+    DOGE_1D: { enabled: false, symbol: DOGE, windows: [1d] }
+    DOGE_1W: { enabled: false, symbol: DOGE, windows: [1w] }
+    DOGE_1M: { enabled: false, symbol: DOGE, windows: [1M] }
+    DOGE_1Y: { enabled: false, symbol: DOGE, windows: [1Y] }
+
   markov:
     min_transitions: 20
     n_states: 20
     smoothing_alpha: 0.3
     window_sizes:
-      15m: 48
-      1d: 30
-      1h: 24
-      1m: 12
-      1w: 12
-      4h: 42
       5m: 40
+      15m: 48
+      1h: 24
+      4h: 42
+      1d: 30
+      1w: 12
+      1M: 12
+      1Y: 12
   position:
     kelly:
       cap_max: 0.05
