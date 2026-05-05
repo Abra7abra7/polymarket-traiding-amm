@@ -99,6 +99,9 @@ class HealthServer:
         # Ready
         open_positions = len(getattr(self.bot, "positions", {}))
         portfolio_value = getattr(self.bot, "portfolio_value", 0.0)
+        daily_trades = getattr(self.bot, "daily_trades_count", 0)
+        uptime = str(datetime.now(timezone.utc) - getattr(self.bot, "stats", {}).get("start_time", datetime.now(timezone.utc)))
+        
         return web.json_response(
             {
                 "status": "ready",
@@ -106,6 +109,8 @@ class HealthServer:
                 "matrices": len(matrices),
                 "open_positions": open_positions,
                 "portfolio_value": portfolio_value,
+                "daily_trades": daily_trades,
+                "uptime": uptime
             }
         )
 

@@ -51,7 +51,7 @@ risk:
 storage:
   checkpoint:
     enabled: true
-    interval_minutes: 60
+    interval_minutes: 5
     path: ~/.trading_bot/checkpoint.json
   redis:
     db: 0

@@ -27,5 +27,8 @@ RUN mkdir -p /root/.trading_bot/logs
 # Create a volume for persistence (crucial for checkpoint.json)
 VOLUME ["/root/.trading_bot"]
 
+# Expose Health and Metrics ports
+EXPOSE 8089 9093
+
 # Command to run the bot
 CMD ["python", "-m", "polymarket_bot"]
