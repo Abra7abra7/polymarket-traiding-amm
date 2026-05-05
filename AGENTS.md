@@ -51,9 +51,20 @@ V kóde sú implementované reálne trhové vplyvy (v `config.yaml` sekcia `pape
 
 ## 🚀 5. Deployment na Hetzner
 
-1.  Naklonuj repo a nainštaluj závislosti (`pip install -r requirements.txt`).
+1.  Naklonuj repo a nainštaluj závislosti:
+    ```bash
+    git clone https://github.com/Abra7abra7/polymarket-traiding-amm.git
+    cd polymarket-traiding-amm
+    pip install -r requirements.txt
+    ```
 2.  Nastav `.env` s tvojimi kľúčmi.
-3.  Spusti bota: `python -m polymarket_bot`.
-4.  Monitoruj stav: `python scripts/report.py`.
+3.  **Nainštaluj bota ako systémovú službu** (pre stabilitu):
+    ```bash
+    chmod +x scripts/install_service.sh
+    ./scripts/install_service.sh
+    ```
+4.  Monitoruj stav:
+    - `python scripts/report.py` (Zisky a obchody)
+    - `sudo systemctl status trading-bot` (Stav služby)
 
 **Varovanie:** Aktuálne nastavenie používa 16 trhových okien (BTC a ETH, všetky timeframy). Pred ostrým štartom na 1D/1W/1M/1Y rámcoch je potrebné aktualizovať `condition_id` v konfigurácii.
