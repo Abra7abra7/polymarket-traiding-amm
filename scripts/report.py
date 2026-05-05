@@ -103,7 +103,8 @@ def generate_report():
         
         active_m = 0
         for m in data.get("matrices", {}).values():
-            if any(any(row) for row in m.get('transitions', [])):
+            counts = m.get('counts', [])
+            if any(any(row) for row in counts):
                 active_m += 1
         print(f"   Model Readiness:   {active_m} active matrices")
 
