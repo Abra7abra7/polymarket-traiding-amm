@@ -1,0 +1,16 @@
+[Unit]
+Description=Polymarket Markov Trading Bot
+After=network.target
+
+[Service]
+Type=simple
+User={{USER}}
+WorkingDirectory={{WORKDIR}}
+ExecStart={{PYTHON_PATH}} -m polymarket_bot
+Restart=always
+RestartSec=10
+StandardOutput=append:{{WORKDIR}}/.trading_bot/logs/systemd.log
+StandardError=append:{{WORKDIR}}/.trading_bot/logs/systemd.log
+
+[Install]
+WantedBy=multi-user.target
