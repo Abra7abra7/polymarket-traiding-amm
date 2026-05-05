@@ -47,7 +47,7 @@ risk:
   max_drawdown: 0.1
   max_open_positions: 15
   max_position_size_usd: 1000
-  max_total_exposure_usd: 10000
+  max_total_exposure_usd: 5000
 storage:
   checkpoint:
     enabled: true
@@ -91,22 +91,22 @@ trading:
       symbol: BTC
       windows: [4h]
     BTC_1D:
-      condition_id: '0x..._PLACEHOLDER_BTC_1D'
+      condition_id: '0x810168f63cd330560b7052c49a46a89e6b8625d4af7ddd85c0ba5734f171'
       enabled: true
       symbol: BTC
       windows: [1d]
     BTC_1W:
-      condition_id: '0x..._PLACEHOLDER_BTC_1W'
+      condition_id: '0xcc5a3447e1bf14981a1e772851b7135b23d8bf1edac04d1c39b3636f85044c04'
       enabled: true
       symbol: BTC
       windows: [1w]
     BTC_1M:
-      condition_id: '0x..._PLACEHOLDER_BTC_1M'
+      condition_id: '0x80d8da05b0363caa86663e5c4086858855871cc5ecfc5b3184e8d1269e935a36'
       enabled: true
       symbol: BTC
       windows: [1M]
     BTC_1Y:
-      condition_id: '0x..._PLACEHOLDER_BTC_1Y'
+      condition_id: '0x9b3bed5b6884fc90605c9de49fe3e240bff35d5779640cdc7d12e4ec5a06cc22'
       enabled: true
       symbol: BTC
       windows: [1Y]
@@ -132,22 +132,22 @@ trading:
       symbol: ETH
       windows: [4h]
     ETH_1D:
-      condition_id: '0x..._PLACEHOLDER_ETH_1D'
+      condition_id: '0x9b3bed5b6884fc90605c9de49fe3e240bff35d5779640cdc7d12e4ec5a06cc22'
       enabled: true
       symbol: ETH
       windows: [1d]
     ETH_1W:
-      condition_id: '0x..._PLACEHOLDER_ETH_1W'
+      condition_id: '0x80d8da05b0363caa86663e5c4086858855871cc5ecfc5b3184e8d1269e935a36'
       enabled: true
       symbol: ETH
       windows: [1w]
     ETH_1M:
-      condition_id: '0x..._PLACEHOLDER_ETH_1M'
+      condition_id: '0xcc5a3447e1bf14981a1e772851b7135b23d8bf1edac04d1c39b3636f85044c04'
       enabled: true
       symbol: ETH
       windows: [1M]
     ETH_1Y:
-      condition_id: '0x..._PLACEHOLDER_ETH_1Y'
+      condition_id: '0x810168f63cd330560b7052c49a46a89e6b8625d4af7ddd85c0ba5734f171'
       enabled: true
       symbol: ETH
       windows: [1Y]
@@ -202,5 +202,5 @@ trading:
     p_hat_entry: 0.55
     p_hat_exit: 0.45
     tau: 0.05
-    trailing_stop_pct: 0.02
-    take_profit_pct: 0.10      # 10% target to cover high fees (7% friction)
+    trailing_stop_pct: 0.03
+    take_profit_pct: 0.07      # 7% target to cover new fees (4.6% friction)

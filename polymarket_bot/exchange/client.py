@@ -184,7 +184,16 @@ class PolymarketClient(BaseExchangeClient):
                 "question": "Will ETH hold 4h?",
                 "base_price": 0.58,
                 "volatility": 0.03
-            }
+            },
+            # --- Added 1D, 1W, 1M, 1Y for BTC and ETH (2026-05-05) ---
+            "BTC_1D": {"id": "0x810168f63cd330560b7052c49a46a89e6b8625d4af7ddd85c0ba5734f171", "symbol": "BTC", "name": "BTC 1D", "window": "1d", "base_price": 0.55, "volatility": 0.02},
+            "BTC_1W": {"id": "0xcc5a3447e1bf14981a1e772851b7135b23d8bf1edac04d1c39b3636f85044c04", "symbol": "BTC", "name": "BTC 1W", "window": "1w", "base_price": 0.55, "volatility": 0.02},
+            "BTC_1M": {"id": "0x80d8da05b0363caa86663e5c4086858855871cc5ecfc5b3184e8d1269e935a36", "symbol": "BTC", "name": "BTC 1M", "window": "1M", "base_price": 0.55, "volatility": 0.02},
+            "BTC_1Y": {"id": "0x9b3bed5b6884fc90605c9de49fe3e240bff35d5779640cdc7d12e4ec5a06cc22", "symbol": "BTC", "name": "BTC 1Y", "window": "1Y", "base_price": 0.55, "volatility": 0.02},
+            "ETH_1D": {"id": "0x9b3bed5b6884fc90605c9de49fe3e240bff35d5779640cdc7d12e4ec5a06cc22", "symbol": "ETH", "name": "ETH 1D", "window": "1d", "base_price": 0.52, "volatility": 0.03},
+            "ETH_1W": {"id": "0x80d8da05b0363caa86663e5c4086858855871cc5ecfc5b3184e8d1269e935a36", "symbol": "ETH", "name": "ETH 1W", "window": "1w", "base_price": 0.52, "volatility": 0.03},
+            "ETH_1M": {"id": "0xcc5a3447e1bf14981a1e772851b7135b23d8bf1edac04d1c39b3636f85044c04", "symbol": "ETH", "name": "ETH 1M", "window": "1M", "base_price": 0.52, "volatility": 0.03},
+            "ETH_1Y": {"id": "0x810168f63cd330560b7052c49a46a89e6b8625d4af7ddd85c0ba5734f171", "symbol": "ETH", "name": "ETH 1Y", "window": "1Y", "base_price": 0.52, "volatility": 0.03}
         })
 
         # Extended weather markets — all 18 EU cities, both 1h/6h, all 4 metrics
