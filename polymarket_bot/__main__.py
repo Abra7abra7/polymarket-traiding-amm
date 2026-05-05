@@ -87,7 +87,7 @@ class TradingBot:
         if self.config.app.paper_trading:
             from polymarket_bot.exchange.client import PolymarketClient
             raw_client = PolymarketClient(dry_run=True) 
-            self.client = PaperTradingEngine(self.config, raw_client)
+            self.client = PaperTradingEngine(raw_client, self.config)
         else:
             from polymarket_bot.exchange.amm_client import PolymarketAMMClient
             self.client = PolymarketAMMClient(self.config)
