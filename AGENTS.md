@@ -1,4 +1,4 @@
-# AGENTS.md — Projektový Manifest & Technická Dokumentácia (v2.5)
+# AGENTS.md — Projektový Manifest & Technická Dokumentácia (v2.6)
 
 **Projekt:** Polymarket Markov Trading Bot  
 **Architektúra:** Modulárny Orchestrátor (Asyncio)  
@@ -7,78 +7,53 @@
 
 ---
 
-## 🧠 1. Ako projekt funguje (Core Logic)
+## 🧠 1. Core Logic & Stratégia
 
-Bot je postavený na predpoklade, že ceny na predikčných trhoch vykazujú určitú mieru "pamäte" a trendovosti, ktorú je možné zachytiť pomocou diskrétnych stavov.
-
-### Matematický Aparát:
-1.  **Markovove reťazce (Predikcia):**
-    -   Ceny (0.0 až 1.0) rozdeľujeme do **20 binov** (diskrétne stavy).
-    -   Bot udržiava **Transition Matrix (P)** pre každý pár (Asset + Timeframe).
-    -   **p_hat (p̂):** Pravdepodobnosť prechodu do nasledujúceho stavu. Ak je p̂ výrazne vyššie ako aktuálna cena, vzniká nákupný signál.
-2.  **Bellmanove rovnice (Optimal Exit):**
-    -   Namiesto fixného Take-Profitu bot rieši problém **Optimal Stopping**.
-    -   V každom kroku porovnáva okamžitý zisk z predaja (`Reward`) s očakávanou hodnotou držania pozície do ďalšieho kroku (`V(s)`).
-    -   Predaj nastane v momente, keď je marginálna hodnota čakania nižšia ako istota okamžitého zisku.
-3.  **Kellyho kritérium (Position Sizing):**
-    -   Bot nevstupuje do pozície s fixnou sumou.
-    -   Veľkosť stávky sa vypočítava ako `f = (bp - q) / b`, kde `edge` je rozdiel medzi `p_hat` a trhovou cenou.
-    -   V konfigu sú nastavené limity (`cap_min`, `cap_max`), aby bot nevsadil príliš veľa pri extrémnych predpovediach.
+Bot využíva kombináciu pravdepodobnostného modelovania a teórie hier:
+1.  **Markovove reťazce**: Modelujú dynamiku ceny v 20 diskrétnych stavoch. Predpovedajú `p_hat` (očakávanú cenu v nasledujúcom kroku).
+2.  **Bellmanove rovnice**: Riešia problém optimálneho zastavenia (Optimal Stopping). Bot nečaká na fixný zisk, ale predáva vtedy, keď očakávaná hodnota držania klesne pod hodnotu okamžitého predaja.
+3.  **Kellyho kritérium**: Dynamicky určuje veľkosť pozície (štandardne cap 1% - 5% kapitálu) podľa „edge“ (rozdielu medzi predpoveďou a trhovou cenou).
 
 ---
 
-## 🏗️ 2. Architektúra Systému
+## 🛠️ 2. Nové Nástroje (Scripts)
 
-Kód je striktne rozdelený na logické vrstvy (Clean Architecture):
+V priebehu optimalizácie sme pridali kľúčové nástroje pre správu bota:
 
--   **`polymarket_bot/__main__.py`**: Orchestrátor. Riadi asynchrónnu slučku (`asyncio`), spracováva signály (SIGINT/SIGTERM) a koordinuje cyklus: *Fetch -> Evaluate -> Execute -> Checkpoint*.
--   **`polymarket_bot/core/decision.py`**: "Mozog" bota. Čistá matematika bez API volaní. Obsahuje logiku pre Markovove matice a Bellmanove výpočty.
--   **`polymarket_bot/core/state_manager.py`**: Zabezpečuje perzistenciu. Ukladá matice a otvorené pozície do JSON checkpointov. Pri reštarte bota sa stav okamžite obnoví.
--   **`polymarket_bot/monitoring/`**:
-    -   **HealthServer (Port 8089)**: Liveness/Readiness sondy pre monitoring.
-    -   **MetricsExporter (Port 9093)**: Prometheus exportér pre vizualizáciu pNL, počtu obchodov a presnosti matíc v Grafane.
-
----
-
-## 🧪 3. Testovacia Stratégia (TDD)
-
-Projekt dodržiava **100% Test Driven Development**. Žiadna funkcia nie je nasadená bez testu.
-
--   **Unit Testy (190+):** Overujú izolovanú logiku (normalizácia matíc, Kellyho limity, validácia konfigu).
--   **Integration Testy (20+):** Simulujú kompletný beh bota v `dry_run` móde, vrátane štartu HTTP serverov a sieťovej komunikácie.
--   **Dynamic Testing:** Testy používajú dynamickú alokáciu portov (port 0), čo eliminuje konflikty pri paralelných testoch na Windows/CI.
-
-**Príkaz na spustenie:**
-```bash
-pytest -v --cov=polymarket_bot tests/
-```
+-   **`scripts/report.py` (Dashboard)**:
+    -   Zobrazuje **Equity** (celkový majetok), **Cash** (voľnú hotovosť), **Realized P/L** a **Unrealized P/L**.
+    -   Vypočítava Win Rate a priemerný zisk na obchod.
+    -   Ukazuje stav naučených matíc (Model Readiness).
+-   **`scripts/reset_bot.py` (Clean Start)**:
+    -   Umožňuje „tvrdý reset“ obchodnej histórie a kapitálu na $5,000.
+    -   **Kľúčová vlastnosť**: Ponecháva naučené Markovove matice (pamäť bota), takže po resete nezačínaš s hlúpym botom.
 
 ---
 
-## ⚙️ 4. Čo sa dá upravovať (Konfigurácia)
+## 📊 3. Analýza nákladov (Live Trading Ready)
 
-Všetky dôležité parametre nájdeš v `config/config.yaml`:
+V kóde sú implementované reálne trhové vplyvy (v `config.yaml` sekcia `paper_trading`):
+-   **Spread (200 bps)**: Rozdiel medzi nákupom a predajom.
+-   **Fees (200 bps)**: Poplatky platformy.
+-   **Gas ($0.01)**: Sieťové poplatky Polygonu.
 
-### Stratégia (`thresholds`):
--   **`eps` (0.15)**: Minimálny rozdiel medzi predpoveďou a cenou pre vstup.
--   **`tau` (0.05)**: Prah stability matice. Ak je model príliš "rozlietaný", bot neobchoduje.
--   **`p_hat_entry` (0.55)**: Minimálna istota smeru pre nákup.
-
-### Riziko (`risk`):
--   **`max_open_positions` (15)**: Limit počtu súbežných obchodov.
--   **`daily_loss_limit_usd` (1000)**: Automatický Stop-Loss pre celý deň.
--   **`max_daily_trades` (100)**: Ochrana proti "over-tradingu" v prípade šumu.
-
-### Trhy (`trading.assets`):
--   Tu pridávaš nové ID trhov z Polymarketu. Každý asset môže mať povolené rôzne timeframy (1m, 5m, 1h, 4h).
+**Záver**: Bot musí dosiahnuť „edge“ aspoň 5-6% na obchod, aby bol v zisku. Pri kapitále pod **$500** začínajú fixné náklady (gas) výrazne znižovať efektivitu. Ideálna suma pre štart je **$1,000+**.
 
 ---
 
-## 🚀 5. Deployment na Hetzner VPS
+## 🏗️ 4. Perzistencia & Stabilita
 
-1.  Naklonuj repo a vytvor `.env` (použi `.env.example`).
-2.  Nainštaluj závislosti: `pip install -r requirements.txt`.
-3.  Spusti bota cez systemd (odporúčané) alebo screen/tmux.
-4.  Sleduj logy: `tail -f ~/.trading_bot/logs/bot-*.log`.
+-   **Checkpointy**: Stav sa ukladá do `~/.trading_bot/checkpoint.json` každých 60 minút.
+-   **Odolnosť voči reštartom**: Po páde servera bot automaticky načíta matice a otvorené pozície a pokračuje v práci.
+-   **Logovanie**: Podrobné JSON logy v `~/.trading_bot/logs/` pre neskoršiu analýzu.
 
-**Varovanie:** Bot je v `paper_trading: true` móde. Pred prepnutím na live trading (`dry_run: false`) sa uisti, že máš dostatočnú históriu v maticiach.
+---
+
+## 🚀 5. Deployment na Hetzner
+
+1.  Naklonuj repo a nainštaluj závislosti (`pip install -r requirements.txt`).
+2.  Nastav `.env` s tvojimi kľúčmi.
+3.  Spusti bota: `python -m polymarket_bot`.
+4.  Monitoruj stav: `python scripts/report.py`.
+
+**Varovanie:** Aktuálne nastavenie používa 16 trhových okien (BTC a ETH, všetky timeframy). Pred ostrým štartom na 1D/1W/1M/1Y rámcoch je potrebné aktualizovať `condition_id` v konfigurácii.
