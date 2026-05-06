@@ -19,25 +19,34 @@ def log(msg: str):
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     line = f"[{ts}] {msg}"
     print(line)
-    with LOG_FILE.open("a") as f:
-        f.write(line + "\n")
+    try:
+        with LOG_FILE.open("a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except: pass
 
 def validate_env() -> bool:
     env_file = BASE_DIR / ".env"
+    log(f"Checking .env at: {env_file}")
     if not env_file.exists():
-        log("❌ .env chýba")
+        log("Error: .env file missing")
         return False
     required = {"POLYMARKET_WALLET_ADDRESS", "POLYMARKET_PRIVATE_KEY"}
     env_vars = {}
-    for line in env_file.read_text().splitlines():
-        if "=" in line and not line.strip().startswith("#"):
-            k, v = line.split("=", 1)
-            env_vars[k.strip()] = v.strip()
+    try:
+        content = env_file.read_text(encoding="utf-8")
+        for line in content.splitlines():
+            if "=" in line and not line.strip().startswith("#"):
+                k, v = line.split("=", 1)
+                env_vars[k.strip()] = v.strip()
+    except Exception as e:
+        log(f"Error reading .env: {e}")
+        return False
+
     missing = required - set(env_vars.keys())
     if missing or not all(env_vars.get(k) for k in required):
-        log(f"❌ Chýbajúce env vars: {missing}")
+        log(f"Error: Missing env vars: {missing}")
         return False
-    log("✅ Env valid")
+    log("Status: Env valid")
     return True
 
 def start_bot() -> subprocess.Popen | None:
@@ -134,51 +143,64 @@ Generated: {datetime.now(timezone.utc).isoformat()}
         REPORT_DIR.mkdir(parents=True, exist_ok=True)
         rpt_file = REPORT_DIR / f"report_24h_{datetime.now().strftime('%Y%m%d_%H%M')}.md"
         rpt_file.write_text(rpt)
-        log(f"✅ Report saved: {rpt_file}")
+        log(f"Report saved: {rpt_file}")
     except Exception as e:
-        log(f"❌ Report failed: {e}")
+        log(f"Report failed: {e}")
 
 def main():
     log("="*60)
-    log("🚀 Resilient 24h AMM Bot Runner started")
+    log("Resilient 24h AMM Bot Runner started")
     log("="*60)
 
     if not validate_env():
-        log("❌ Validation failed – exiting")
-        sys.exit(1)
+        log("Validation failed - exiting")
+        return
 
     proc = start_bot()
     if not proc:
-        sys.exit(1)
+        log("Initial start failed - exiting")
+        return
 
     start_time = time.time()
     deadline   = start_time + 86400
-    last_hc    = time.time()
+    last_health_check = time.time()
 
     while time.time() < deadline:
-        if time.time() - last_hc >= HEALTH_INTERVAL:
-            healthy = is_healthy()
-            last_hc = time.time()
-            log(f"Health: {'✅' if healthy else '❌'}")
-
-            if not healthy:
-                log("⚠️  Unhealthy → restart")
+        try:
+            # Check if process is still alive
+            if proc.poll() is not None:
+                log(f"Bot process died with code {proc.returncode}")
                 if should_restart():
-                    proc = restart_bot(proc)
-                continue
+                    proc = start_bot()
+                    if not proc: break
+                    continue
+                else:
+                    break
 
-        if proc.poll() is not None:
-            log(f"⚠️  Bot exited code={proc.poll()} → restart")
-            if should_restart():
-                proc = restart_bot(proc)
-            else:
-                time.sleep(30)
+            # Periodic health check
+            now = time.time()
+            if now - last_health_check > HEALTH_INTERVAL:
+                last_health_check = now
+                if not is_healthy():
+                    log("Bot unhealthy - restarting")
+                    proc = restart_bot(proc)
+                    if not proc: break
+                else:
+                    log("Bot healthy")
+
+            time.sleep(5)
+
+        except KeyboardInterrupt:
+            log("Shutdown requested")
+            if proc: proc.terminate()
+            break
+        except Exception as e:
+            log(f"Runner error: {e}")
+            time.sleep(5)
             continue
 
         elapsed  = int(time.time() - start_time)
         remain   = int(deadline - time.time())
-        log(f"⏳ {elapsed//60}m / {remain//60}m remaining | PID {proc.pid}")
-        time.sleep(30)
 
     log("⏰ 24h reached — shutting down")
     try:
