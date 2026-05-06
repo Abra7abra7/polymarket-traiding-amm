@@ -6,6 +6,7 @@ def reset_bot():
     checkpoint_path = Path(os.path.expanduser("~/.trading_bot/checkpoint.json"))
     paper_positions = Path(os.path.expanduser("~/.trading_bot/paper_positions.json"))
     paper_trades = Path(os.path.expanduser("~/.trading_bot/paper_trades.json"))
+    trade_history = Path(os.path.expanduser("~/.trading_bot/trade_history.json"))
     
     if not checkpoint_path.exists():
         print("[!] No checkpoint found to reset.")
@@ -43,6 +44,8 @@ def reset_bot():
             paper_positions.unlink()
         if paper_trades.exists():
             paper_trades.unlink()
+        if trade_history.exists():
+            trade_history.unlink()
             
         print("\n" + "="*50)
         print(" SUCCESS: BOT RESET COMPLETED")
