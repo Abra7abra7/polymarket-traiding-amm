@@ -110,57 +110,39 @@ class MetricsExporter:
         )
 
         # Resolve port (flat or nested)
-        port = self._resolve_port(cfg)
-        self._port = port  # Save for stop()
+        base_port = self._resolve_port(cfg)
+        self._port = base_port
 
-        # Acquire global lock and ensure no stale server occupies the port
-        with MetricsExporter._lock:
-            if port in MetricsExporter._live:
-                prev = MetricsExporter._live[port]
+        # Attempt to bind with fallback ports if original is taken
+        for port_offset in range(10):  # Try 10 consecutive ports
+            current_port = base_port + port_offset
+            with MetricsExporter._lock:
+                if current_port in MetricsExporter._live:
+                    prev = MetricsExporter._live[current_port]
+                    try: prev['server'].shutdown()
+                    except: pass
+                    try: prev['server'].server_close()
+                    except: pass
+                    MetricsExporter._live.pop(current_port, None)
+
                 try:
-                    # 1. Signal shutdown to stop the serve_forever loop
-                    prev['server'].shutdown()
-                except Exception:
-                    pass
-                try:
-                    # 2. Close listening socket immediately to unblock accept()
-                    prev['server'].server_close()
-                except Exception:
-                    pass
-                try:
-                    # 3. Wait for thread to finish (extended timeout for CI slowness)
-                    prev['thread'].join(timeout=5.0)
-                except Exception:
-                    pass
-                # 4. Remove stale entry irrespective of errors
-                MetricsExporter._live.pop(port, None)
-
-            # Build server (bind without auto-activate then set reuse)
-            self._server = socketserver.TCPServer(("0.0.0.0", port), _MetricsHandler, bind_and_activate=False)
-            self._server.allow_reuse_address = True
-            self._server.registry = self.registry
-            try:
-                self._server.server_bind()
-                self._server.server_activate()
-                # Capture actual port if port 0 was used
-                if self._port == 0:
-                    self._port = self._server.server_address[1]
-            except OSError as e:
-                raise RuntimeError(f"Metrics server failed to bind port {port}: {e}") from e
-
-            self._thread = threading.Thread(target=self._server.serve_forever)
-            self._thread.daemon = True
-            self._thread.start()
-
-            # Track in global registry
-            MetricsExporter._live[port] = {
-                'thread': self._thread,
-                'server': self._server,
-                'ref': weakref.ref(self)
-            }
+                    self._server = socketserver.TCPServer(("0.0.0.0", current_port), _MetricsHandler, bind_and_activate=False)
+                    self._server.allow_reuse_address = True
+                    self._server.server_bind()
+                    self._server.server_activate()
+                    self._port = current_port
+                    self._server.registry = self.registry
+                    
+                    if current_port != base_port:
+                        print(f"[Metrics] Port {base_port} busy, using fallback: {current_port}")
+                    break 
+                except OSError as e:
+                    if port_offset == 9: # Last attempt
+                        raise RuntimeError(f"Metrics server failed to bind after 10 attempts: {e}") from e
+                    continue
 
         # Finalizer – runs when this instance is GC'd
-        self._finalizer = weakref.finalize(self, self._cleanup, port)
+        self._finalizer = weakref.finalize(self, self._cleanup, self._port)
 
     @property
     def port(self) -> int:

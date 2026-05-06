@@ -75,6 +75,8 @@ def cleanup_ports():
                 try:
                     result = subprocess.run(['lsof', '-t', '-i', f':{port}'], capture_output=True, text=True)
                     pids = result.stdout.strip().split()
+                    if pids:
+                        log(f"Found stale processes on port {port}: {pids}. Killing...")
                     for pid in pids:
                         subprocess.run(['kill', '-9', pid], capture_output=True)
                 except: pass
@@ -86,6 +88,7 @@ def cleanup_ports():
                         parts = line.strip().split()
                         if len(parts) >= 5:
                             pid = parts[-1]
+                            log(f"Found stale Windows process on port {port} (PID {pid}). Killing...")
                             subprocess.run(['taskkill', '/F', '/PID', pid], capture_output=True)
         except: pass
 
