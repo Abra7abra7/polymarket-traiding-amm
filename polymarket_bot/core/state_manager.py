@@ -52,3 +52,18 @@ class StateManager:
         except Exception as e:
             self.logger.error("Failed to save checkpoint", error=str(e))
             return False
+
+    def log_trade(self, trade_data: Dict[str, Any]):
+        """Appends a completed trade to a permanent history file."""
+        history_path = os.path.join(os.path.dirname(self.path), "trade_history.json")
+        try:
+            os.makedirs(os.path.dirname(history_path), exist_ok=True)
+            trade_data['logged_at'] = datetime.now(timezone.utc).isoformat()
+            
+            # Use append mode with a newline for easy parsing
+            with open(history_path, 'a') as f:
+                f.write(json.dumps(trade_data, default=str) + "\n")
+            
+            self.logger.info("Trade logged to history", asset=trade_data.get('asset'))
+        except Exception as e:
+            self.logger.error("Failed to log trade to history", error=str(e))

@@ -228,6 +228,16 @@ class TradingBot:
                     self.daily_trades_count += 1
                     self.stats["trades_entered"] += 1
                     self.logger.info("Trade entered", asset=asset, price=price, shares=shares, cost=cost)
+                    self.state_manager.log_trade({
+                        "type": "BUY",
+                        "asset": asset,
+                        "window": window,
+                        "price": price,
+                        "shares": shares,
+                        "cost": cost,
+                        "p_hat": meta["p_hat"],
+                        "order_id": order["order_id"]
+                    })
         except Exception as e:
             self.logger.error("Evaluation failed", asset=asset, error=str(e))
 
@@ -287,6 +297,18 @@ class TradingBot:
                                          reason=exit_info['reason'], 
                                          pnl=pnl,
                                          proceeds=proceeds)
+                        self.state_manager.log_trade({
+                            "type": "SELL",
+                            "asset": pos['asset'],
+                            "window": pos['window'],
+                            "price": price,
+                            "shares": pos['shares'],
+                            "proceeds": proceeds,
+                            "pnl": pnl,
+                            "reason": exit_info['reason'],
+                            "entry_price": pos['entry_price'],
+                            "hold_duration_sec": (datetime.now(timezone.utc) - datetime.fromisoformat(pos['entry_time'])).total_seconds()
+                        })
             except Exception as e:
                 self.logger.error("Exit failed", order_id=oid, error=str(e))
         
