@@ -124,10 +124,18 @@ class ThresholdsConfig(BaseModel):
         return v
 
 
+class KellyConfig(BaseModel):
+    cap_max: float = 0.80
+    cap_min: float = 0.05
+    fraction: float = 0.5
+
+class FixedConfig(BaseModel):
+    fraction: float = 0.10
+
 class PositionConfig(BaseModel):
     method: str = "kelly"  # "kelly" | "fixed" | "custom"
-    kelly: Dict[str, float] = {"cap_max": 0.80, "cap_min": 0.05}
-    fixed: Dict[str, float] = {"fraction": 0.10}
+    kelly: KellyConfig = Field(default_factory=KellyConfig)
+    fixed: FixedConfig = Field(default_factory=FixedConfig)
 
 
 class ExecutionConfig(BaseModel):

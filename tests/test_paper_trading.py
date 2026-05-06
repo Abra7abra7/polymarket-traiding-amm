@@ -61,7 +61,7 @@ async def test_paper_buy_execution(paper_engine):
     assert order["side"] == "buy"
     assert order["price"] > 0.5
     assert paper_engine.current_balance < 950.0 # 1000 - (0.5 * 100) - fees
-    assert "BTC:0" in paper_engine.positions
+    assert "BTC_5M_0" in paper_engine.positions
 
 @pytest.mark.asyncio
 async def test_paper_sell_execution(paper_engine):
@@ -76,7 +76,7 @@ async def test_paper_sell_execution(paper_engine):
     assert order is not None
     assert order["status"] == "filled"
     assert paper_engine.current_balance > initial_balance
-    assert "BTC:0" not in paper_engine.positions
+    assert "BTC_5M_0" not in paper_engine.positions
 
 @pytest.mark.asyncio
 async def test_insufficient_balance(paper_engine):
@@ -96,7 +96,7 @@ async def test_pnl_tracking(paper_engine):
     paper_engine.wrapped.get_ticker = MagicMock(return_value=0.6)
     paper_engine.update_market_prices({"BTC": 0.6})
     
-    pos = paper_engine.positions["BTC:0"]
+    pos = paper_engine.positions["BTC_5M_0"]
     assert pos.current_pnl > 0
 
 

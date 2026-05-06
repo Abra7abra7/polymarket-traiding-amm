@@ -111,28 +111,28 @@ class TestKellyFraction:
     """Test Kelly Criterion position sizing."""
 
     def test_kelly_fraction_calculation(self):
-        de = DecisionEngine()
+        de = DecisionEngine(kelly_fraction=1.0, kelly_cap_max=0.80)
         f = de.kelly_fraction(p_hat=0.7, market_price=0.6)
         assert 0.20 <= f <= 0.30
 
     def test_kelly_fraction_zero_when_fair_odds(self):
-        de = DecisionEngine()
+        de = DecisionEngine(kelly_fraction=1.0)
         f = de.kelly_fraction(p_hat=0.5, market_price=0.5)
         assert abs(f) < 1e-6
 
     def test_kelly_fraction_negative_means_dont_bet(self):
-        de = DecisionEngine()
+        de = DecisionEngine(kelly_fraction=1.0)
         f = de.kelly_fraction(p_hat=0.3, market_price=0.6)
         assert f < 0
 
     def test_kelly_cap_applied(self):
-        de = DecisionEngine()
+        de = DecisionEngine(kelly_fraction=1.0)
         de.kelly_cap_max = 0.50
         f = de.kelly_fraction(p_hat=0.95, market_price=0.2)
         assert f == 0.50  # capped
 
     def test_kelly_floor_applied(self):
-        de = DecisionEngine()
+        de = DecisionEngine(kelly_fraction=1.0)
         de.kelly_cap_min = 0.10
         f = de.kelly_fraction(p_hat=0.52, market_price=0.5)
         assert f == 0.10  # floored

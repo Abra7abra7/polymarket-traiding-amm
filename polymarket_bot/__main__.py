@@ -60,9 +60,9 @@ class TradingBot:
             eps=self.config.trading.thresholds.eps,
             stop_loss_pct=self.config.trading.thresholds.trailing_stop_pct,
             take_profit_pct=getattr(self.config.trading.thresholds, 'take_profit_pct', 0.07),
-            kelly_cap_max=self.config.position.kelly.cap_max,
-            kelly_cap_min=self.config.position.kelly.cap_min,
-            kelly_fraction=getattr(self.config.position.kelly, 'fraction', 0.5),
+            kelly_cap_max=self.config.trading.position.kelly.cap_max,
+            kelly_cap_min=self.config.trading.position.kelly.cap_min,
+            kelly_fraction=getattr(self.config.trading.position.kelly, 'fraction', 0.5),
             swap_fee=getattr(self.config.paper_trading, 'swap_fee_bps', 150) / 10000.0,
             gas_cost_usd=getattr(self.config.paper_trading, 'gas_fee_usd', 0.01)
         )
@@ -74,9 +74,9 @@ class TradingBot:
         )
 
         self.risk_manager = PortfolioRiskManager(
-            max_total_exposure_usd=self.config.risk.max_total_exposure_usd,
-            max_single_position_usd=self.config.risk.max_position_size_usd,
-            max_positions=self.config.risk.max_open_positions
+            max_total_exposure_usd=self.config.risk.max_total_exposure_usd or 100000.0,
+            max_single_position_usd=self.config.risk.max_position_size_usd or 5000.0,
+            max_positions=self.config.risk.max_open_positions or 5
         )
 
         self.matrices: Dict[str, TransitionMatrix] = {}
