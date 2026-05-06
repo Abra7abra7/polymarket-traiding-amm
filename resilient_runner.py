@@ -4,10 +4,10 @@ import subprocess, time, os, sys, signal, json
 from datetime import datetime, timezone
 from pathlib import Path
 
-BASE_DIR   = Path("/opt/trading_bot_amm")
-CONFIG     = BASE_DIR / "config/config.yaml"
-PID_FILE   = Path("/tmp/amm_bot_24h.pid")
-LOG_FILE   = Path("/tmp/amm_bot_24h.log")
+BASE_DIR   = Path(__file__).parent.absolute()
+CONFIG     = BASE_DIR / "config" / "config.yaml"
+PID_FILE   = BASE_DIR / "amm_bot_24h.pid"
+LOG_FILE   = BASE_DIR / "amm_bot_24h.log"
 REPORT_DIR = BASE_DIR / "reports"
 HEALTH_URL = "http://localhost:8089/health/ready"
 
