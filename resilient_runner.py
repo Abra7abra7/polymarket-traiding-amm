@@ -25,7 +25,11 @@ def log(msg: str):
     except: pass
 
 def validate_env() -> bool:
+    # Check both project root and current working directory
     env_file = BASE_DIR / ".env"
+    if not env_file.exists():
+        env_file = Path.cwd() / ".env"
+    
     log(f"Checking .env at: {env_file}")
     if not env_file.exists():
         log("Error: .env file missing")
