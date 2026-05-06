@@ -13,6 +13,7 @@ Bot využíva kombináciu pravdepodobnostného modelovania a teórie hier:
 1.  **Markovove reťazce**: Modelujú dynamiku ceny v 20 diskrétnych stavoch. Predpovedajú `p_hat` (očakávanú cenu v nasledujúcom kroku).
 2.  **Bellmanove rovnice**: Riešia problém optimálneho zastavenia. Bot nečaká na fixný zisk, ale predáva vtedy, keď očakávaná hodnota držania klesne pod hodnotu okamžitého predaja.
 3.  **Kellyho kritérium**: Dynamicky určuje veľkosť pozície. Implementovaný **hard cap 5%** kapitálu na jeden obchod pre maximálnu bezpečnosť.
+4.  **Cost-Aware Filtering (Novinka)**: Bot pred každým vstupom vypočíta celkové náklady (Round-trip fees + gas). Obchod sa zrealizuje len vtedy, ak očakávaný zisk prevyšuje náklady + bezpečnostnú rezervu (`eps`).
 
 ---
 

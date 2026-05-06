@@ -245,22 +245,34 @@ class DecisionEngine:
 
     def evaluate_trade(self, P: np.ndarray, state: int, price: float, portfolio_value: float) -> dict:
         """
-        Full evaluation wrapper.
-
-        Returns a dict with decision, metrics, and size details if entering.
+        Full evaluation wrapper with Cost-Aware filtering.
         """
+        # 1. Base Markov decision (threshold check)
         decision, meta = self.should_enter(P, state, price)
+        
+        # 2. Cost-Aware refinement: Calculate round-trip friction
+        # Total cost = entry fee + exit fee + gas (normalized)
+        gas_impact = (self.gas_cost_usd / portfolio_value) if portfolio_value > 0 else 0
+        total_costs = (self.swap_fee * 2.0) + gas_impact
+        
+        # 3. Check if net gap (p_hat - price - costs) still clears eps
+        net_gap = meta["gap"] - total_costs
+        is_profitable = net_gap >= self.eps
+        
+        final_decision = decision and is_profitable
 
         result = {
-            "decision": decision,
+            "decision": final_decision,
             "p_hat": meta["p_hat"],
             "persist": meta["persist"],
             "gap": meta["gap"],
-            "expected_return": self.expected_return(meta["p_hat"], price) if decision else 0.0,
+            "net_gap": net_gap,
+            "total_costs": total_costs,
+            "expected_return": (net_gap / price) if final_decision else 0.0,
             "metadata": meta,
         }
 
-        if decision:
+        if final_decision:
             capital, shares = self.position_size(
                 portfolio_value=portfolio_value,
                 p_hat=meta["p_hat"],
