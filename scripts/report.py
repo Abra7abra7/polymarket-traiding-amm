@@ -3,15 +3,33 @@ import os
 import yaml
 from pathlib import Path
 from datetime import datetime
+from collections import deque
 
-def format_currency(value):
+def format_currency(value, sign_always=True):
     color = "\033[92m" if value > 0 else ("\033[91m" if value < 0 else "")
     reset = "\033[0m"
-    sign = "+" if value > 0 else ("-" if value < 0 else "")
+    if sign_always:
+        sign = "+" if value > 0 else ("-" if value < 0 else "")
+    else:
+        sign = ""
     return f"{color}{sign}${abs(value):,.2f}{reset}" if value != 0 else "$0.00"
 
 def format_plain(value):
     return f"${value:,.2f}"
+
+def format_pct(value):
+    color = "\033[92m" if value > 0.5 else ("\033[91m" if value < 0.5 else "")
+    reset = "\033[0m"
+    return f"{color}{value:.1%}{reset}"
+
+def format_time(iso_str):
+    try:
+        # Handle various ISO formats
+        iso_str = iso_str.replace('Z', '+00:00')
+        dt = datetime.fromisoformat(iso_str)
+        return dt.strftime('%H:%M:%S')
+    except:
+        return iso_str[:8]
 
 def generate_report():
     # 1. Paths
@@ -97,18 +115,56 @@ def generate_report():
         if not positions:
             print("   >>> No active positions at the moment.")
         else:
-            print(f"   {'ASSET':<12} {'WINDOW':<8} {'SHARES':<8} {'ENTRY':<10} {'CURRENT':<10} {'P/L':<12}")
-            print(f"   {'-'*65}")
+            print(f"   {'ASSET':<12} {'W':<5} {'SHARES':<7} {'ENTRY':<10} {'CURR':<10} {'MAX':<10} {'P_HAT':<8} {'P/L':<12}")
+            print(f"   {'-'*80}")
             for pid, pos in positions.items():
                 asset = pos.get('asset', '???')
                 window = pos.get('window', '???')
                 shares = pos.get('shares', 0)
                 entry = pos.get('entry_price', 0.0)
                 current = pos.get('current_price', entry)
+                max_px = pos.get('max_price', entry)
+                p_hat = pos.get('p_hat', 0.0)
                 pnl = (current - entry) * shares
-                print(f"   {asset:<12} {window:<8} {shares:<8} {format_plain(entry):<10} {format_plain(current):<10} {format_currency(pnl):<12}")
+                
+                print(f"   {asset:<12} {window:<5} {shares:<7} {format_plain(entry):<10} {format_plain(current):<10} {format_plain(max_px):<10} {format_pct(p_hat):<8} {format_currency(pnl):<12}")
 
-        # 4. Bot Health
+        # 4. Trade History
+        history_path = checkpoint_path.parent / "trade_history.json"
+        print(f"\n[ RECENT TRADE HISTORY ]")
+        if not history_path.exists():
+            print("   >>> No trade history found yet.")
+        else:
+            try:
+                with open(history_path, 'r', encoding='utf-8') as f:
+                    # Read last 15 lines efficiently
+                    lines = deque(f, 15)
+                
+                trades = [json.loads(line) for line in lines]
+                if not trades:
+                    print("   >>> History file is empty.")
+                else:
+                    print(f"   {'TIME':<10} {'ASSET':<12} {'TYPE':<6} {'PRICE':<8} {'PNL':<12} {'INFO / REASON'}")
+                    print(f"   {'-'*75}")
+                    for t in reversed(trades): # Most recent first
+                        ttime = format_time(t.get('logged_at', t.get('time', '')))
+                        tasset = t.get('asset', '???')
+                        ttype = t.get('type', '???')
+                        tprice = t.get('price', 0.0)
+                        tpnl = t.get('pnl')
+                        
+                        info = ""
+                        if ttype == "BUY":
+                            info = f"Exp: {t.get('p_hat', 0):.1%}"
+                        elif ttype == "SELL":
+                            info = t.get('reason', 'manual')
+                        
+                        pnl_str = format_currency(tpnl) if tpnl is not None else "---"
+                        print(f"   {ttime:<10} {tasset:<12} {ttype:<6} {format_plain(tprice):<8} {pnl_str:<12} {info}")
+            except Exception as e:
+                print(f"   >>> Error reading history: {e}")
+
+        # 5. Bot Health
         print(f"\n[ SYSTEM STATUS ]")
         uptime = stats.get("start_time", "N/A")
         print(f"   Bot Started:       {uptime}")
