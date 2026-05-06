@@ -25,32 +25,38 @@ def log(msg: str):
     except: pass
 
 def validate_env() -> bool:
-    # Check both project root and current working directory
-    env_file = BASE_DIR / ".env"
-    if not env_file.exists():
-        env_file = Path.cwd() / ".env"
-    
-    log(f"Checking .env at: {env_file}")
-    if not env_file.exists():
-        log("Error: .env file missing")
-        return False
     required = {"POLYMARKET_WALLET_ADDRESS", "POLYMARKET_PRIVATE_KEY"}
-    env_vars = {}
-    try:
-        content = env_file.read_text(encoding="utf-8")
-        for line in content.splitlines():
-            if "=" in line and not line.strip().startswith("#"):
-                k, v = line.split("=", 1)
-                env_vars[k.strip()] = v.strip()
-    except Exception as e:
-        log(f"Error reading .env: {e}")
-        return False
+    
+    # 1. Check if they already exist in the environment (e.g. set by Coolify/Docker)
+    env_vars = {k: os.environ.get(k) for k in required if os.environ.get(k)}
+    
+    # 2. If not found, try to load from .env file
+    if len(env_vars) < len(required):
+        # Check both project root and current working directory
+        env_file = BASE_DIR / ".env"
+        if not env_file.exists():
+            env_file = Path.cwd() / ".env"
+        
+        log(f"Checking .env file at: {env_file}")
+        if env_file.exists():
+            try:
+                content = env_file.read_text(encoding="utf-8")
+                for line in content.splitlines():
+                    if "=" in line and not line.strip().startswith("#"):
+                        k, v = line.split("=", 1)
+                        k, v = k.strip(), v.strip()
+                        if k in required and not env_vars.get(k):
+                            env_vars[k] = v
+            except Exception as e:
+                log(f"Error reading .env: {e}")
 
     missing = required - set(env_vars.keys())
     if missing or not all(env_vars.get(k) for k in required):
-        log(f"Error: Missing env vars: {missing}")
+        log(f"Error: Missing required environment variables: {missing}")
+        log("Hint: Set them in Coolify UI or create a .env file.")
         return False
-    log("Status: Env valid")
+        
+    log("Status: Environment validated (vars found)")
     return True
 
 def start_bot() -> subprocess.Popen | None:
