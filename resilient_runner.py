@@ -113,12 +113,19 @@ def start_bot() -> subprocess.Popen | None:
         return None
 
 def is_healthy() -> bool:
+    # Try to read dynamic port from file first
+    port = 8089
+    port_file = Path("/root/.trading_bot/health_port")
+    if port_file.exists():
+        try:
+            port = int(port_file.read_text().strip())
+        except: pass
+
+    url = f"http://localhost:{port}/health/ready"
     try:
-        import requests
-        r = requests.get(HEALTH_URL, timeout=5)
-        if r.status_code == 200:
-            data = r.json()
-            # Accept both "ok" (standard) and "ready" (our bot's implementation)
+        import urllib.request
+        with urllib.request.urlopen(url, timeout=5) as resp:
+            data = json.loads(resp.read().decode())
             status = data.get("status")
             return status in ["ok", "ready"] and data.get("matrices", 0) >= 1
     except Exception:

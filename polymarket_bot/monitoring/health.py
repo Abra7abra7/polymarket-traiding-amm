@@ -132,19 +132,33 @@ class HealthServer:
             HealthServer._live.pop(self._port, None)
 
         # Create and start new server
+        base_port = self._port
         self.runner = web.AppRunner(self.app)
         await self.runner.setup()
 
-        self.site = web.TCPSite(self.runner, "0.0.0.0", self._port)
-        await self.site.start()
-
-        # Capture actual port if we requested port 0
-        if self._port == 0 and self.site._server is not None:
-            for socket in self.site._server.sockets:
-                address = socket.getsockname()
-                if address:
-                    self._port = address[1]
-                    break
+        # Attempt to bind with fallback ports
+        for port_offset in range(10):
+            current_port = base_port + port_offset
+            try:
+                self.site = web.TCPSite(self.runner, "0.0.0.0", current_port)
+                await self.site.start()
+                self._port = current_port
+                
+                if current_port != base_port:
+                    print(f"[Health] Port {base_port} busy, using fallback: {current_port}")
+                
+                # Write current health port to a file so the runner can find us
+                try:
+                    port_file = "/root/.trading_bot/health_port"
+                    with open(port_file, "w") as f:
+                        f.write(str(current_port))
+                except: pass
+                
+                break
+            except OSError:
+                if port_offset == 9:
+                    raise
+                continue
 
         # Register in live map
         HealthServer._live[self._port] = {
