@@ -27,6 +27,10 @@ def log(msg: str):
 def validate_env() -> bool:
     required = {"POLYMARKET_WALLET_ADDRESS", "POLYMARKET_PRIVATE_KEY"}
     
+    # Debug: Print what we see in the environment
+    found_keys = [k for k in os.environ.keys() if k.startswith("POLYMARKET_")]
+    log(f"Debug: Found POLYMARKET_* keys: {found_keys}")
+
     # 1. Check if they already exist in the environment (e.g. set by Coolify/Docker)
     env_vars = {k: os.environ.get(k) for k in required if os.environ.get(k)}
     
