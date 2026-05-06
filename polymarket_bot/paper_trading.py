@@ -257,7 +257,8 @@ class PaperTradingEngine(BaseExchangeClient):
         fill_price = result["fill_price"]
         quantity = shares_to_buy  # Use the actual shares bought, not recalculating
         asset = market_id.split('_')[0]
-        pid = f"{asset}:{outcome_id}"
+        # Use market_id to distinguish between windows (e.g. BTC_1H vs BTC_4H)
+        pid = f"{market_id}_{outcome_id}"
 
         # Fees
         fee_rate = self.swap_fee_bps / 10000
@@ -305,7 +306,8 @@ class PaperTradingEngine(BaseExchangeClient):
         window = kwargs.get('window')
         if asset is None:
             asset = market_id.split('_')[0]
-        pid = f"{asset}:{outcome_id}"
+        # Match unique pid from buy()
+        pid = f"{market_id}_{outcome_id}"
         if pid in self.positions:
             # Exit long
             pos = self.positions[pid]

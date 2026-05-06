@@ -65,12 +65,19 @@ def generate_report():
         print(f"   Available Cash:    {format_plain(cash)} (Liquidity)")
         print(f"   Invested Capital:  {format_plain(holdings_value)}")
         
-        print(f"\n[ PERFORMANCE ]")
         total_pnl = total_equity - initial_balance
         pnl_pct = (total_pnl / initial_balance) * 100 if initial_balance > 0 else 0
+        
+        # Breakdown unrealized into active positions vs balance mismatch
+        active_pnl = sum((pos.get('current_price', pos.get('entry_price', 0)) - pos.get('entry_price', 0)) * pos.get('shares', 0) for pos in positions.values())
+        balance_drift = unrealized_pnl - active_pnl
+
+        print(f"\n[ PERFORMANCE ]")
         print(f"   Net Profit/Loss:   {format_currency(total_pnl)} ({pnl_pct:+.2f}%)")
         print(f"   Realized P/L:      {format_currency(realized_pnl)} (Locked in)")
-        print(f"   Unrealized P/L:    {format_currency(unrealized_pnl)} (In open trades)")
+        print(f"   Active Trades P/L: {format_currency(active_pnl)}")
+        if abs(balance_drift) > 0.01:
+            print(f"   Accounting Drift:  {format_currency(balance_drift)} (Fees/Missing Trades)")
 
         # 2. Trade Statistics
         entered = stats.get("trades_entered", 0)

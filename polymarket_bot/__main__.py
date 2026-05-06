@@ -15,6 +15,7 @@ try:
     from polymarket_bot.core.matrix import TransitionMatrix, bin_price
     from polymarket_bot.core.decision import DecisionEngine
     from polymarket_bot.core.state_manager import StateManager
+    from polymarket_bot.core.risk_manager import PortfolioRiskManager
     from polymarket_bot.paper_trading import PaperTradingEngine
     from polymarket_bot.config.loader import load_config
     from polymarket_bot.monitoring.logging import setup_logging
@@ -28,6 +29,7 @@ except ImportError:
     from polymarket_bot.core.matrix import TransitionMatrix, bin_price
     from polymarket_bot.core.decision import DecisionEngine
     from polymarket_bot.core.state_manager import StateManager
+    from polymarket_bot.core.risk_manager import PortfolioRiskManager
     from polymarket_bot.paper_trading import PaperTradingEngine
     from polymarket_bot.config.loader import load_config
     from polymarket_bot.monitoring.logging import setup_logging
@@ -55,7 +57,15 @@ class TradingBot:
             tau=self.config.trading.thresholds.tau,
             eps=self.config.trading.thresholds.eps,
             stop_loss_pct=self.config.trading.thresholds.trailing_stop_pct,
-            take_profit_pct=getattr(self.config.trading.thresholds, 'take_profit_pct', 0.03)
+            take_profit_pct=getattr(self.config.trading.thresholds, 'take_profit_pct', 0.07),
+            kelly_cap_max=self.config.position.kelly.cap_max,
+            kelly_cap_min=self.config.position.kelly.cap_min
+        )
+
+        self.risk_manager = PortfolioRiskManager(
+            max_total_exposure_usd=self.config.risk.max_total_exposure_usd,
+            max_single_position_usd=self.config.risk.max_position_size_usd,
+            max_positions=self.config.risk.max_open_positions
         )
 
         self.matrices: Dict[str, TransitionMatrix] = {}
@@ -105,6 +115,10 @@ class TradingBot:
             self.daily_trades_count = checkpoint.get('daily_trades_count', 0)
             for key, m_data in checkpoint.get('matrices', {}).items():
                 self.matrices[key] = TransitionMatrix.from_dict(m_data)
+            
+            # Sync RiskManager with restored positions
+            for pos in self.positions.values():
+                self.risk_manager.record_entry(pos['asset'], pos['shares'] * pos['entry_price'])
         else:
             self.portfolio_value = self.config.paper_trading.initial_balance
 
@@ -151,6 +165,11 @@ class TradingBot:
 
             decision, meta = self.decision_engine.should_enter(matrix.get_matrix(), bin_price(price), price)
             
+            # Check if we already have an active position for this asset/window combo
+            for p in self.positions.values():
+                if p.get("asset") == asset and p.get("window") == window:
+                    return
+
             if decision and self.daily_trades_count < self.config.risk.max_daily_trades:
                 # Position sizing
                 capital, shares = self.decision_engine.position_size(
@@ -160,6 +179,16 @@ class TradingBot:
                 )
                 
                 if shares < 1: return
+
+                # RISK CHECK
+                violation = self.risk_manager.check_entry(
+                    asset=asset,
+                    proposed_size_usd=shares * price,
+                    correlations={} # Could be expanded later
+                )
+                if violation:
+                    self.logger.warning("Trade blocked by RiskManager", reason=str(violation), asset=asset)
+                    return
 
                 order = await self.client.buy(
                     market_id=market_id,
@@ -179,8 +208,10 @@ class TradingBot:
                         "shares": shares,
                         "entry_time": datetime.now(timezone.utc).isoformat(),
                         "max_price": price,
-                        "current_price": price
+                        "current_price": price,
+                        "p_hat": meta["p_hat"] # Save p_hat for exit logic
                     }
+                    self.risk_manager.record_entry(asset, shares * price)
                     cost = shares * price
                     self.portfolio_value -= cost
                     self.daily_trades_count += 1
@@ -202,6 +233,12 @@ class TradingBot:
                 pos['current_price'] = price
                 pos['max_price'] = max(pos.get('max_price', 0), price)
                 
+                # Get latest model prediction for dynamic exit
+                key = f"{pos['asset']}:{pos['window']}"
+                if key in self.matrices and self.matrices[key].is_valid:
+                    _, latest_p_hat = self.matrices[key].most_likely_next_state(bin_price(price))
+                    pos['p_hat'] = latest_p_hat
+
                 # Full strategy exit check
                 exit_info = self.decision_engine.should_exit(
                     entry_price=pos['entry_price'], 
@@ -231,6 +268,9 @@ class TradingBot:
                         self.stats["total_pnl"] = self.stats.get("total_pnl", 0.0) + pnl
                         self.stats["trades_settled"] = self.stats.get("trades_settled", 0) + 1
                         
+                        # Update RiskManager
+                        self.risk_manager.record_exit(pos['asset'], pos['shares'] * pos['entry_price'])
+                        
                         self.logger.info("Position closed", 
                                          asset=pos['asset'], 
                                          reason=exit_info['reason'], 
@@ -249,6 +289,9 @@ class TradingBot:
                 loop_start = time.time()
                 if hasattr(self.client, "refresh_markets"): 
                     await self.client.refresh_markets()
+
+                # Synchronize portfolio value with real/simulated balance (accounts for fees/gas)
+                self.portfolio_value = await self.client.get_balance()
 
                 await self.check_exits()
 
@@ -289,8 +332,10 @@ class TradingBot:
         
         self.state_manager.save({
             'positions': self.positions,
-            'matrices': {k: m.to_dict() for k, m in self.matrices.items()},
-            'stats': self.stats
+            'portfolio_value': self.portfolio_value,
+            'stats': self.stats,
+            'daily_trades_count': self.daily_trades_count,
+            'matrices': {k: m.to_dict() for k, m in self.matrices.items()}
         })
         print("👋 Bot stopped")
 

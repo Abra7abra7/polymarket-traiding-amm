@@ -22,7 +22,9 @@ class DecisionEngine:
                  eps: float = 0.05,
                  min_probability: float = 0.01,
                  stop_loss_pct: float = 0.02,
-                 take_profit_pct: float = 0.03):
+                 take_profit_pct: float = 0.03,
+                 kelly_cap_max: float = 0.05,
+                 kelly_cap_min: float = 0.01):
         """
         Args:
             tau: Persistence threshold (diagonal element must exceed this)
@@ -30,6 +32,8 @@ class DecisionEngine:
             min_probability: Minimum probability to consider (avoid noise near 0)
             stop_loss_pct: Percentage loss to trigger exit (e.g., 0.02 for 2%)
             take_profit_pct: Percentage gain to trigger exit (e.g., 0.10 for 10%)
+            kelly_cap_max: Maximum % of portfolio to bet (default 0.05)
+            kelly_cap_min: Minimum % of portfolio to bet (default 0.01)
         """
         # Validate thresholds
         if not (0 < tau <= 1):
@@ -45,9 +49,9 @@ class DecisionEngine:
         self.stop_loss_pct = stop_loss_pct
         self.take_profit_pct = take_profit_pct
 
-        # Kelly caps – mutable via direct assignment (tests tweak these)
-        self.kelly_cap_max = 0.80
-        self.kelly_cap_min = 0.05
+        # Kelly caps
+        self.kelly_cap_max = kelly_cap_max
+        self.kelly_cap_min = kelly_cap_min
 
     def adaptive_tau(self, recent_returns: list[float], base_tau: float = 0.05,
                      window: int = 100, min_tau: float = 0.02, max_tau: float = 0.20,
