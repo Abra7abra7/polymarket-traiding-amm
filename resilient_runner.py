@@ -11,8 +11,8 @@ LOG_FILE   = BASE_DIR / "amm_bot_24h.log"
 REPORT_DIR = BASE_DIR / "reports"
 HEALTH_URL = "http://localhost:8089/health/ready"
 
-MAX_RESTARTS_PER_HOUR = 5
-RESTART_COOLDOWN      = 5
+MAX_RESTARTS_PER_HOUR = 30
+RESTART_COOLDOWN      = 2
 HEALTH_INTERVAL       = 30
 
 def log(msg: str):
@@ -68,16 +68,25 @@ def cleanup_ports():
     ports = [8089, 9093]
     for port in ports:
         try:
-            # Cross-platform way to find and kill process on port
             if os.name == 'posix':
-                subprocess.run(['fuser', '-k', f'{port}/tcp'], capture_output=True)
+                # Attempt fuser cleanup
+                subprocess.run(['fuser', '-k', '-9', f'{port}/tcp'], capture_output=True)
+                # Attempt lsof cleanup as fallback
+                try:
+                    result = subprocess.run(['lsof', '-t', '-i', f':{port}'], capture_output=True, text=True)
+                    pids = result.stdout.strip().split()
+                    for pid in pids:
+                        subprocess.run(['kill', '-9', pid], capture_output=True)
+                except: pass
             else:
-                # Windows equivalent
+                # Windows cleanup
                 output = subprocess.check_output(['netstat', '-ano', '-p', 'tcp']).decode()
                 for line in output.splitlines():
                     if f':{port}' in line:
-                        pid = line.strip().split()[-1]
-                        subprocess.run(['taskkill', '/F', '/PID', pid], capture_output=True)
+                        parts = line.strip().split()
+                        if len(parts) >= 5:
+                            pid = parts[-1]
+                            subprocess.run(['taskkill', '/F', '/PID', pid], capture_output=True)
         except: pass
 
 def start_bot() -> subprocess.Popen | None:
@@ -119,8 +128,8 @@ def should_restart() -> bool:
     global restart_times
     restart_times = [t for t in restart_times if now - t < 3600]
     if len(restart_times) >= MAX_RESTARTS_PER_HOUR:
-        log("⚠️  Rate-limit reštartov — 600s pauza")
-        time.sleep(600)
+        log("⚠️  Rate-limit reštartov — 30s pauza")
+        time.sleep(30)
         restart_times.clear()
         return True
     restart_times.append(now)
