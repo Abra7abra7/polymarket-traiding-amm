@@ -1,9 +1,9 @@
-# AGENTS.md — Projektový Manifest & Technická Dokumentácia (v2.6)
+# AGENTS.md — Projektový Manifest & Technická Dokumentácia (v3.0 - Production Ready)
 
 **Projekt:** Polymarket Markov Trading Bot  
-**Architektúra:** Modulárny Orchestrátor (Asyncio)  
-**Matematické jadro:** Markovove reťazce, Bellmanove rovnice, Kellyho kritérium  
-**Deployment:** Optimalizované pre Hetzner VPS (Linux/Ubuntu)
+**Architektúra:** Resilient Orchestrator (24/7 Autonomous)  
+**Matematické jadro:** Markovove reťazce, Bellmanove rovnice, Kellyho kritérium (5% Cap)  
+**Deployment:** Coolify / Docker / Hetzner VPS
 
 ---
 
@@ -11,56 +11,58 @@
 
 Bot využíva kombináciu pravdepodobnostného modelovania a teórie hier:
 1.  **Markovove reťazce**: Modelujú dynamiku ceny v 20 diskrétnych stavoch. Predpovedajú `p_hat` (očakávanú cenu v nasledujúcom kroku).
-2.  **Bellmanove rovnice**: Riešia problém optimálneho zastavenia (Optimal Stopping). Bot nečaká na fixný zisk, ale predáva vtedy, keď očakávaná hodnota držania klesne pod hodnotu okamžitého predaja.
-3.  **Kellyho kritérium**: Dynamicky určuje veľkosť pozície (štandardne cap 1% - 5% kapitálu) podľa „edge“ (rozdielu medzi predpoveďou a trhovou cenou).
+2.  **Bellmanove rovnice**: Riešia problém optimálneho zastavenia. Bot nečaká na fixný zisk, ale predáva vtedy, keď očakávaná hodnota držania klesne pod hodnotu okamžitého predaja.
+3.  **Kellyho kritérium**: Dynamicky určuje veľkosť pozície. Implementovaný **hard cap 5%** kapitálu na jeden obchod pre maximálnu bezpečnosť.
 
 ---
 
-## 🛠️ 2. Nové Nástroje (Scripts)
+## 🛡️ 2. Resilient Architecture (Novinka v v3.0)
 
-V priebehu optimalizácie sme pridali kľúčové nástroje pre správu bota:
-
--   **`scripts/report.py` (Dashboard)**:
-    -   Zobrazuje **Equity** (celkový majetok), **Cash** (voľnú hotovosť), **Realized P/L** a **Unrealized P/L**.
-    -   Vypočítava Win Rate a priemerný zisk na obchod.
-    -   Ukazuje stav naučených matíc (Model Readiness).
--   **`scripts/reset_bot.py` (Clean Start)**:
-    -   Umožňuje „tvrdý reset“ obchodnej histórie a kapitálu na $5,000.
-    -   **Kľúčová vlastnosť**: Ponecháva naučené Markovove matice (pamäť bota), takže po resete nezačínaš s hlúpym botom.
+Pre zabezpečenie 24/7 prevádzky bol implementovaný `resilient_runner.py`:
+-   **Auto-Recovery**: Ak proces bota spadne (napr. chyba siete), runner ho do 30 sekúnd automaticky reštartuje.
+-   **Port Conflict Resolution**: 
+    -   Bot implementuje **Port Fallback**. Ak sú porty 8089 (Health) alebo 9093 (Metrics) obsadené, automaticky sa posúva na ďalšie voľné (8090, 9094, atď.).
+    -   Runner dynamicky detekuje aktívne porty cez `/root/.trading_bot/health_port`.
+-   **Signal Handling**: Runner korektne spracováva SIGINT/SIGTERM, čo umožňuje čisté vypnutie v Docker/Coolify prostredí.
 
 ---
 
-## 📊 3. Analýza nákladov (Live Trading Ready)
+## ⚙️ 3. Konfigurácia & Environment
 
-V kóde sú implementované reálne trhové vplyvy (v `config.yaml` sekcia `paper_trading`):
--   **Spread (200 bps)**: Rozdiel medzi nákupom a predajom.
--   **Fees (200 bps)**: Poplatky platformy.
--   **Gas ($0.01)**: Sieťové poplatky Polygonu.
-
-**Záver**: Bot musí dosiahnuť „edge“ aspoň 5-6% na obchod, aby bol v zisku. Pri kapitále pod **$500** začínajú fixné náklady (gas) výrazne znižovať efektivitu. Ideálna suma pre štart je **$1,000+**.
-
----
-
-## 🏗️ 4. Perzistencia & Stabilita
-
--   **Checkpointy**: Stav sa ukladá do `~/.trading_bot/checkpoint.json` každých 60 minút.
--   **Odolnosť voči reštartom**: Po páde servera bot automaticky načíta matice a otvorené pozície a pokračuje v práci.
--   **Logovanie**: Podrobné JSON logy v `~/.trading_bot/logs/` pre neskoršiu analýzu.
+Bot je plne optimalizovaný pre Cloud-Native nasadenie:
+-   **Environment Variables**: Prioritne sa využívajú systémové premenné (Coolify UI). Podporované sú:
+    -   `POLYMARKET_PRIVATE_KEY` (64-znakové hex)
+    -   `POLYMARKET_API_KEY` / `POLYMARKET_API_SECRET`
+    -   `POLYMARKET_WALLET_ADDRESS`
+-   **Dry Run Mode**: V `config.yaml` nastavený `dry_run: true` pre bezpečné testovanie na reálnych dátach bez rizika straty kapitálu.
 
 ---
 
-## 🚀 5. Deployment & Verifikácia
+## 📊 4. Monitoring & Správa
 
-Pred ostrým nasadením na Hetzner odporúčam tento postup:
+-   **`scripts/report.py`**: Profesionálny dashboard zobrazujúci Equity, P/L, Win Rate a stav Markovových matíc.
+-   **`scripts/reset_bot.py`**: Resetuje históriu a kapitál na $5,000 pri **zachovaní naučených matíc** (pamäť bota zostáva).
+-   **Health Probes**: Bot poskytuje `/health/ready` endpoint, ktorý sleduje:
+    -   Pripojenie k burze.
+    -   Stav inicializácie matíc.
+    -   Počet otvorených pozícií.
 
-1.  **Unit Testy**: Spusti `pytest`. Všetkých 29 testov musí prejsť.
-2.  **Backtest (Simulácia)**: Spusti `python scripts/backtest.py --mock`. Overíš tým, že rozhodovacia logika (Bellman + Kelly) funguje správne na náhodných dátach.
-3.  **Paper Trading**: V `config.yaml` nastav `paper_trading: true`. Bot bude simulovať obchody bez rizika reálnych peňazí.
-4.  **Monitoring**: Sleduj `python scripts/report.py` pre reálny stav portfólia a P/L.
+---
 
-### Bezpečnostné prvky (Safety First):
-- **Half-Kelly (0.5)**: Bot nikdy neriskuje celý kapitál na jeden obchod.
-- **Bellman Cost-Aware**: Bot nepredá pozíciu, ak očakávaný zisk nepokryje poplatky (1.5% AMM + gas).
-- **Daily Reset**: Počítadlo obchodov sa resetuje každý deň, aby bot nezostal "visieť" na limite.
+## 🏗️ 5. Perzistencia (Volume Mapping)
 
-**Varovanie:** Aktuálne nastavenie používa 16 trhových okien (BTC a ETH, všetky timeframy). Pred ostrým štartom na 1D/1W/1M/1Y rámcoch je potrebné aktualizovať `condition_id` v konfigurácii.
+V Docker prostredí je kritické mapovať volume `/root/.trading_bot`:
+-   `checkpoint.json`: Ukladá stav matíc a otvorených obchodov.
+-   `logs/`: JSONL logy pre audit a analýzu.
+-   `health_port`: Súbor pre dynamickú komunikáciu portov medzi botom a runnerom.
+
+---
+
+## 🚀 6. Prevádzkové pokyny
+
+1.  **Štart**: `python resilient_runner.py` (toto spustí bota a bude ho strážiť).
+2.  **Kontrola logov**: `tail -f amm_bot_24h.log` pre sledovanie runnera.
+3.  **Live Logy bota**: Logy bota v JSON formáte sú v `~/.trading_bot/logs/`.
+4.  **Záloha**: Raz týždenne odporúčame zálohovať `checkpoint.json` (mozog bota).
+
+**Bezpečnostné upozornenie:** Aktuálna verzia je vo fáze **Production-Testing**. Pred prechodom na ostrý kapitál overte stabilitu runnera aspoň po dobu 48 hodín.
