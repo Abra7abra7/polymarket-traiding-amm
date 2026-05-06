@@ -205,8 +205,11 @@ def main():
     start_time = time.time()
     deadline   = start_time + 86400
     last_health_check = time.time()
+    
+    log(f"Runner started. Target deadline: {datetime.fromtimestamp(deadline, timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}")
 
-    while time.time() < deadline:
+    keep_running = True
+    while time.time() < deadline and keep_running:
         try:
             # Check if process is still alive
             if proc.poll() is not None:
@@ -216,6 +219,7 @@ def main():
                     if not proc: break
                     continue
                 else:
+                    keep_running = False
                     break
 
             # Periodic health check
@@ -231,26 +235,27 @@ def main():
 
             time.sleep(5)
 
-        except KeyboardInterrupt:
-            log("Shutdown requested")
-            if proc: proc.terminate()
-            break
+        except (KeyboardInterrupt, SystemExit):
+            log("Shutdown requested via signal")
+            keep_running = False
         except Exception as e:
             log(f"Runner error: {e}")
             time.sleep(5)
-            continue
 
-        elapsed  = int(time.time() - start_time)
-        remain   = int(deadline - time.time())
+    if time.time() >= deadline:
+        log("⏰ 24h deadline reached — shutting down")
+    else:
+        log("🛑 Shutdown initiated before deadline")
 
-    log("⏰ 24h reached — shutting down")
-    try:
-        proc.send_signal(signal.SIGINT)
-        proc.wait(timeout=30)
-        log("✅ Bot stopped")
-    except Exception as e:
-        log(f"⚠️  Graceful stop failed: {e} → SIGKILL")
-        proc.kill()
+    if proc:
+        try:
+            log("Stopping bot process...")
+            proc.send_signal(signal.SIGINT)
+            proc.wait(timeout=30)
+            log("✅ Bot stopped")
+        except Exception as e:
+            log(f"⚠️  Graceful stop failed: {e} → SIGKILL")
+            proc.kill()
 
     generate_report()
     log("🎉 Run complete")
