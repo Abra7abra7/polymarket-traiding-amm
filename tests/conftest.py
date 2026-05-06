@@ -77,8 +77,8 @@ trading:
   position:
     method: "kelly"
     kelly:
-      cap_max: 0.80
-      cap_min: 0.05
+      cap_max: 0.05
+      cap_min: 0.01
   execution:
     order_type: "limit"
     limit_timeout_seconds: 10

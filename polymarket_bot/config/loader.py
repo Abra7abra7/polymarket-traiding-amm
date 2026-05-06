@@ -125,8 +125,8 @@ class ThresholdsConfig(BaseModel):
 
 
 class KellyConfig(BaseModel):
-    cap_max: float = 0.80
-    cap_min: float = 0.05
+    cap_max: float = 0.05
+    cap_min: float = 0.01
     fraction: float = 0.5
 
 class FixedConfig(BaseModel):
