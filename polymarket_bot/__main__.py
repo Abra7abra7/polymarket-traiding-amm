@@ -16,6 +16,7 @@ try:
     from polymarket_bot.core.decision import DecisionEngine
     from polymarket_bot.core.state_manager import StateManager
     from polymarket_bot.core.risk_manager import PortfolioRiskManager
+    from polymarket_bot.core.tensor import TensorCore
     from polymarket_bot.paper_trading import PaperTradingEngine
     from polymarket_bot.config.loader import load_config
     from polymarket_bot.monitoring.logging import setup_logging
@@ -30,6 +31,7 @@ except ImportError:
     from polymarket_bot.core.decision import DecisionEngine
     from polymarket_bot.core.state_manager import StateManager
     from polymarket_bot.core.risk_manager import PortfolioRiskManager
+    from polymarket_bot.core.tensor import TensorCore
     from polymarket_bot.paper_trading import PaperTradingEngine
     from polymarket_bot.config.loader import load_config
     from polymarket_bot.monitoring.logging import setup_logging
@@ -59,7 +61,16 @@ class TradingBot:
             stop_loss_pct=self.config.trading.thresholds.trailing_stop_pct,
             take_profit_pct=getattr(self.config.trading.thresholds, 'take_profit_pct', 0.07),
             kelly_cap_max=self.config.position.kelly.cap_max,
-            kelly_cap_min=self.config.position.kelly.cap_min
+            kelly_cap_min=self.config.position.kelly.cap_min,
+            kelly_fraction=getattr(self.config.position.kelly, 'fraction', 0.5),
+            swap_fee=getattr(self.config.paper_trading, 'swap_fee_bps', 150) / 10000.0,
+            gas_cost_usd=getattr(self.config.paper_trading, 'gas_fee_usd', 0.01)
+        )
+
+        self.tensor_core = TensorCore(
+            assets=list(self.config.trading.assets.keys()),
+            windows=list(self.config.trading.markov.window_sizes.keys()),
+            n_states=self.config.trading.markov.n_states
         )
 
         self.risk_manager = PortfolioRiskManager(
@@ -287,10 +298,23 @@ class TradingBot:
         while self.running:
             try:
                 loop_start = time.time()
+                
+                # Daily Reset
+                current_date = datetime.now(timezone.utc).date()
+                if current_date > self.last_trade_date:
+                    self.logger.info("New day detected, resetting daily trade counter.", 
+                                     old_date=self.last_trade_date, 
+                                     new_date=current_date)
+                    self.daily_trades_count = 0
+                    self.last_trade_date = current_date
+
+                # Sync TensorCore with latest matrices
+                self.tensor_core.sync(self.matrices)
+
                 if hasattr(self.client, "refresh_markets"): 
                     await self.client.refresh_markets()
 
-                # Synchronize portfolio value with real/simulated balance (accounts for fees/gas)
+                # Synchronize portfolio value with real/simulated balance
                 self.portfolio_value = await self.client.get_balance()
 
                 await self.check_exits()

@@ -230,12 +230,3 @@ class TransitionMatrix:
     def __repr__(self) -> str:
         return f"<TransitionMatrix states={self.n_states} transitions={self.total_transitions} valid={self.is_valid}>"
 
-# Alias for backward compatibility / tests
-def build_matrix_from_prices(prices: list[float], n_states: int = 100) -> np.ndarray:
-    """Legacy: build a simple transition matrix from a price list (no sliding window)."""
-    tm = TransitionMatrix(n_states=n_states, window_size=max(60, len(prices)-1), min_transitions=1)
-    tm.add_price_sequence(prices, bin_price)
-    matrix = tm.get_matrix()
-    if matrix is None:
-        raise RuntimeError("Failed to build matrix")
-    return matrix

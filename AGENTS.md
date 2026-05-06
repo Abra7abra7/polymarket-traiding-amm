@@ -49,22 +49,18 @@ V kóde sú implementované reálne trhové vplyvy (v `config.yaml` sekcia `pape
 
 ---
 
-## 🚀 5. Deployment na Hetzner
+## 🚀 5. Deployment & Verifikácia
 
-1.  Naklonuj repo a nainštaluj závislosti:
-    ```bash
-    git clone https://github.com/Abra7abra7/polymarket-traiding-amm.git
-    cd polymarket-traiding-amm
-    pip install -r requirements.txt
-    ```
-2.  Nastav `.env` s tvojimi kľúčmi.
-3.  **Nainštaluj bota ako systémovú službu** (pre stabilitu):
-    ```bash
-    chmod +x scripts/install_service.sh
-    ./scripts/install_service.sh
-    ```
-4.  Monitoruj stav:
-    - `python scripts/report.py` (Zisky a obchody)
-    - `sudo systemctl status trading-bot` (Stav služby)
+Pred ostrým nasadením na Hetzner odporúčam tento postup:
+
+1.  **Unit Testy**: Spusti `pytest`. Všetkých 29 testov musí prejsť.
+2.  **Backtest (Simulácia)**: Spusti `python scripts/backtest.py --mock`. Overíš tým, že rozhodovacia logika (Bellman + Kelly) funguje správne na náhodných dátach.
+3.  **Paper Trading**: V `config.yaml` nastav `paper_trading: true`. Bot bude simulovať obchody bez rizika reálnych peňazí.
+4.  **Monitoring**: Sleduj `python scripts/report.py` pre reálny stav portfólia a P/L.
+
+### Bezpečnostné prvky (Safety First):
+- **Half-Kelly (0.5)**: Bot nikdy neriskuje celý kapitál na jeden obchod.
+- **Bellman Cost-Aware**: Bot nepredá pozíciu, ak očakávaný zisk nepokryje poplatky (1.5% AMM + gas).
+- **Daily Reset**: Počítadlo obchodov sa resetuje každý deň, aby bot nezostal "visieť" na limite.
 
 **Varovanie:** Aktuálne nastavenie používa 16 trhových okien (BTC a ETH, všetky timeframy). Pred ostrým štartom na 1D/1W/1M/1Y rámcoch je potrebné aktualizovať `condition_id` v konfigurácii.

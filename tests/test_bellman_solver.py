@@ -52,3 +52,14 @@ def test_bellman_volatility_impact():
     # In a binary option, higher vol usually increases the "upside" chance of hitting 1.0 early
     # even if it also increases downside. The American feature makes it more valuable.
     assert val_high != val_low
+
+def test_bellman_cost_impact():
+    # Higher costs should reduce the fair value of stopping
+    p_hat = 0.7
+    solver_low_cost = BellmanSolver(p_true=p_hat, sigma=0.03, T=60, swap_fee=0.0, gas_cost_usd=0.0)
+    solver_high_cost = BellmanSolver(p_true=p_hat, sigma=0.03, T=60, swap_fee=0.05, gas_cost_usd=1.0)
+    
+    val_low = solver_low_cost._approx_american_binary()
+    val_high = solver_high_cost._approx_american_binary()
+    
+    assert val_high < val_low

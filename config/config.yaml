@@ -24,6 +24,7 @@ monitoring:
     enabled: true
     port: 8089
   log_level: INFO
+  log_file: ~/.trading_bot/logs/bot-%Y-%m-%d.log
   metrics:
     enabled: true
     port: 9093

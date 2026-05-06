@@ -11,12 +11,10 @@ from typing import Tuple, Optional
 import numpy as np
 from .bellman_solver import BellmanSolver
 
-
 class DecisionEngine:
     """
     Encapsulates all trading decisions: entry evaluation and position sizing.
     """
-
     def __init__(self,
                  tau: float = 0.87,
                  eps: float = 0.05,
@@ -24,7 +22,10 @@ class DecisionEngine:
                  stop_loss_pct: float = 0.02,
                  take_profit_pct: float = 0.03,
                  kelly_cap_max: float = 0.05,
-                 kelly_cap_min: float = 0.01):
+                 kelly_cap_min: float = 0.01,
+                 kelly_fraction: float = 0.5,
+                 swap_fee: float = 0.015,
+                 gas_cost_usd: float = 0.01):
         """
         Args:
             tau: Persistence threshold (diagonal element must exceed this)
@@ -34,6 +35,7 @@ class DecisionEngine:
             take_profit_pct: Percentage gain to trigger exit (e.g., 0.10 for 10%)
             kelly_cap_max: Maximum % of portfolio to bet (default 0.05)
             kelly_cap_min: Minimum % of portfolio to bet (default 0.01)
+            kelly_fraction: Multiplier for Kelly (default 0.5 for Half-Kelly)
         """
         # Validate thresholds
         if not (0 < tau <= 1):
@@ -49,9 +51,14 @@ class DecisionEngine:
         self.stop_loss_pct = stop_loss_pct
         self.take_profit_pct = take_profit_pct
 
-        # Kelly caps
+        # Kelly settings
         self.kelly_cap_max = kelly_cap_max
         self.kelly_cap_min = kelly_cap_min
+        self.kelly_fraction_multiplier = kelly_fraction
+        
+        # Costs
+        self.swap_fee = swap_fee
+        self.gas_cost_usd = gas_cost_usd
 
     def adaptive_tau(self, recent_returns: list[float], base_tau: float = 0.05,
                      window: int = 100, min_tau: float = 0.02, max_tau: float = 0.20,
@@ -188,7 +195,8 @@ class DecisionEngine:
             cap_min = self.kelly_cap_min
 
         b = (1.0 - market_price) / market_price
-        f = p_hat - (1.0 - p_hat) / b
+        f_full = p_hat - (1.0 - p_hat) / b
+        f = f_full * self.kelly_fraction_multiplier
 
         # Apply ceiling
         if f > cap_max:
@@ -315,7 +323,13 @@ class DecisionEngine:
             }
 
         # --- Bellman optimal stopping ---
-        solver = BellmanSolver(p_true=p_hat, sigma=sigma, T=days_to_expiry)
+        solver = BellmanSolver(
+            p_true=p_hat, 
+            sigma=sigma, 
+            T=days_to_expiry,
+            swap_fee=self.swap_fee,
+            gas_cost_usd=self.gas_cost_usd
+        )
         fair_value = solver._approx_american_binary()
 
         edge = fair_value - current_price
