@@ -44,7 +44,7 @@ paper_trading:
 risk:
   kill_switches:
     daily_loss_limit_usd: 1000
-  max_daily_trades: 100
+  max_daily_trades: 30
   max_drawdown: 0.1
   max_open_positions: 15
   max_position_size_usd: 1000
@@ -73,7 +73,7 @@ trading:
 
     BTC_5M:
       condition_id: '0xe718f96652b0123ed430993507ab3c4ee80c8abdd0c8ab1da400598c289d12cf'
-      enabled: true
+      enabled: false
       symbol: BTC
       windows: [5m]
     BTC_15M:
@@ -114,7 +114,7 @@ trading:
 
     ETH_5M:
       condition_id: '0x6e8fd545fd885b615e00b70952c49a46a89e6b8625d4af7ddd85c0ba5734f171'
-      enabled: true
+      enabled: false
       symbol: ETH
       windows: [5m]
     ETH_15M:
@@ -198,10 +198,10 @@ trading:
       cap_max: 0.05
       cap_min: 0.01
   thresholds:
-    eps: 0.15
+    eps: 0.20
     min_probability: 0.01
     p_hat_entry: 0.55
     p_hat_exit: 0.45
-    tau: 0.05
-    trailing_stop_pct: 0.03
-    take_profit_pct: 0.07      # 7% target to cover new fees (4.6% friction)
+    tau: 0.12
+    trailing_stop_pct: 0.05
+    take_profit_pct: 0.12      # Aim for higher profit to cover 3% round-trip friction
