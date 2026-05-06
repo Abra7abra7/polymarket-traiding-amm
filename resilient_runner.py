@@ -63,7 +63,25 @@ def validate_env() -> bool:
     log("Status: Environment validated (vars found)")
     return True
 
+def cleanup_ports():
+    """Kill any processes using the bot's ports to prevent 'Address already in use'."""
+    ports = [8089, 9093]
+    for port in ports:
+        try:
+            # Cross-platform way to find and kill process on port
+            if os.name == 'posix':
+                subprocess.run(['fuser', '-k', f'{port}/tcp'], capture_output=True)
+            else:
+                # Windows equivalent
+                output = subprocess.check_output(['netstat', '-ano', '-p', 'tcp']).decode()
+                for line in output.splitlines():
+                    if f':{port}' in line:
+                        pid = line.strip().split()[-1]
+                        subprocess.run(['taskkill', '/F', '/PID', pid], capture_output=True)
+        except: pass
+
 def start_bot() -> subprocess.Popen | None:
+    cleanup_ports()
     PID_FILE.unlink(missing_ok=True)
     if LOG_FILE.exists():
         LOG_FILE.rename(LOG_FILE.with_suffix(f".{int(time.time())}.log"))
