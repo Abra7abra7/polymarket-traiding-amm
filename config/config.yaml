@@ -1,8 +1,7 @@
 app:
-  dry_run: true
+  trading_mode: paper          # "paper" for simulation, "live" for real trading
   environment: production
   name: polymarket-amm-bot
-  paper_trading: true
   version: 1.0.0
 exchange:
   amm:
@@ -181,7 +180,7 @@ trading:
     DOGE_1Y: { enabled: false, symbol: DOGE, windows: [1Y] }
 
   markov:
-    min_transitions: 20
+    min_transitions: 12
     n_states: 20
     smoothing_alpha: 0.3
     window_sizes:
@@ -198,10 +197,10 @@ trading:
       cap_max: 0.05
       cap_min: 0.01
   thresholds:
-    eps: 0.20
+    eps: 0.06
     min_probability: 0.01
     p_hat_entry: 0.55
     p_hat_exit: 0.45
-    tau: 0.12
+    tau: 0.15
     trailing_stop_pct: 0.05
-    take_profit_pct: 0.12      # Aim for higher profit to cover 3% round-trip friction
+    take_profit_pct: 0.08      # Aim for 8% profit to cover 3% round-trip friction

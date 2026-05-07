@@ -48,7 +48,8 @@ class TradingBot:
         self.config = load_config(config_path)
         
         # CLI Overrides
-        if dry_run is not None: self.config.app.dry_run = dry_run
+        if dry_run is True: self.config.app.trading_mode = "paper"
+        elif dry_run is False: self.config.app.trading_mode = "live"
         if log_level is not None: self.config.monitoring.log_level = log_level
 
         self.logger = setup_logging(self.config.monitoring)
@@ -81,7 +82,7 @@ class TradingBot:
 
         self.matrices: Dict[str, TransitionMatrix] = {}
         self.positions: Dict[str, dict] = {}
-        self.portfolio_value = self.config.paper_trading.initial_balance if self.config.app.paper_trading else 0.0
+        self.portfolio_value = self.config.paper_trading.initial_balance if self.config.app.trading_mode == "paper" else 0.0
         self.running = False
         
         self.shutdown_event = asyncio.Event()
@@ -107,7 +108,7 @@ class TradingBot:
         self.logger.info("Initializing bot components...")
         
         # Client Setup
-        if self.config.app.paper_trading:
+        if self.config.app.trading_mode == "paper":
             from polymarket_bot.exchange.client import PolymarketClient
             raw_client = PolymarketClient(dry_run=True) 
             self.client = PaperTradingEngine(raw_client, self.config)
@@ -238,6 +239,14 @@ class TradingBot:
                         "p_hat": meta["p_hat"],
                         "order_id": order["order_id"]
                     })
+                    # Immediate checkpoint save after trade
+                    self.state_manager.save({
+                        'positions': self.positions,
+                        'portfolio_value': self.portfolio_value,
+                        'stats': self.stats,
+                        'daily_trades_count': self.daily_trades_count,
+                        'matrices': {k: m.to_dict() for k, m in self.matrices.items()}
+                    })
         except Exception as e:
             self.logger.error("Evaluation failed", asset=asset, error=str(e))
 
@@ -308,6 +317,14 @@ class TradingBot:
                             "reason": exit_info['reason'],
                             "entry_price": pos['entry_price'],
                             "hold_duration_sec": (datetime.now(timezone.utc) - datetime.fromisoformat(pos['entry_time'])).total_seconds()
+                        })
+                        # Immediate checkpoint save after trade
+                        self.state_manager.save({
+                            'positions': self.positions,
+                            'portfolio_value': self.portfolio_value,
+                            'stats': self.stats,
+                            'daily_trades_count': self.daily_trades_count,
+                            'matrices': {k: m.to_dict() for k, m in self.matrices.items()}
                         })
             except Exception as e:
                 self.logger.error("Exit failed", order_id=oid, error=str(e))

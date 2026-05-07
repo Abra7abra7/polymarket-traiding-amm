@@ -279,8 +279,7 @@ class AppConfig(BaseModel):
     name: str = "polymarket-markov-bot"
     version: str = "1.0.0"
     environment: str = "development"
-    dry_run: bool = True
-    paper_trading: bool = False
+    trading_mode: str = "paper"  # "paper" | "live"
 
 
 class TradingConfig(BaseModel):

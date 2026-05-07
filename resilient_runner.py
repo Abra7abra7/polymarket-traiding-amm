@@ -97,7 +97,7 @@ def start_bot() -> subprocess.Popen | None:
     PID_FILE.unlink(missing_ok=True)
     if LOG_FILE.exists():
         LOG_FILE.rename(LOG_FILE.with_suffix(f".{int(time.time())}.log"))
-    cmd = [sys.executable, "-m", "polymarket_bot", "--config", str(CONFIG), "--dry-run", "--log-level", "INFO"]
+    cmd = [sys.executable, "-m", "polymarket_bot", "--config", str(CONFIG), "--log-level", "INFO"]
     log(f"🚀 Starting: {' '.join(cmd)}")
     try:
         proc = subprocess.Popen(
@@ -115,7 +115,7 @@ def start_bot() -> subprocess.Popen | None:
 def is_healthy() -> bool:
     # Try to read dynamic port from file first
     port = 8089
-    port_file = Path("/root/.trading_bot/health_port")
+    port_file = Path(os.path.expanduser("~/.trading_bot/health_port"))
     if port_file.exists():
         try:
             port = int(port_file.read_text().strip())
@@ -212,14 +212,10 @@ def main():
         log("Initial start failed - exiting")
         return
 
-    start_time = time.time()
-    deadline   = start_time + 86400
-    last_health_check = time.time()
-    
-    log(f"Runner started. Target deadline: {datetime.fromtimestamp(deadline, timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}")
+    log(f"Runner started. PID: {os.getpid()}")
 
     keep_running = True
-    while time.time() < deadline and keep_running:
+    while keep_running:
         try:
             # Check if process is still alive
             if proc.poll() is not None:
@@ -252,10 +248,7 @@ def main():
             log(f"Runner error: {e}")
             time.sleep(5)
 
-    if time.time() >= deadline:
-        log("⏰ 24h deadline reached — shutting down")
-    else:
-        log("🛑 Shutdown initiated before deadline")
+    log("🛑 Shutdown initiated")
 
     if proc:
         try:

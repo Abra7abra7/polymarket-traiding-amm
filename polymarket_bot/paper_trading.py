@@ -90,15 +90,23 @@ class PaperTradingEngine(BaseExchangeClient):
         if self.positions_file.exists():
             with open(self.positions_file) as f:
                 raw = json.load(f)
-            for pid, pos in raw.items():
+            # Restore balance if present
+            self.current_balance = raw.get("current_balance", self.initial_balance)
+            # Restore positions
+            positions_data = raw.get("positions", {})
+            for pid, pos in positions_data.items():
                 self.positions[pid] = SimulatedPosition(**pos)
         if self.trades_file.exists():
             with open(self.trades_file) as f:
                 self.trade_log = [json.loads(line) for line in f if line.strip()]
 
     def _save_state(self):
+        state = {
+            "current_balance": self.current_balance,
+            "positions": {k: asdict(v) for k, v in self.positions.items()}
+        }
         with open(self.positions_file, 'w') as f:
-            json.dump({k: asdict(v) for k, v in self.positions.items()}, f, indent=2)
+            json.dump(state, f, indent=2)
         if self.trade_log:
             with open(self.trades_file, 'a') as f:
                 for t in self.trade_log:
