@@ -213,6 +213,7 @@ def main():
         return
 
     log(f"Runner started. PID: {os.getpid()}")
+    last_health_check = time.time()
 
     keep_running = True
     while keep_running:
