@@ -59,7 +59,18 @@ V Docker prostredí je kritické mapovať volume `/root/.trading_bot`:
 
 ---
 
-## 🚀 6. Prevádzkové pokyny
+## 🐙 6. Kraken Paper Trading Adapter (dry_run only)
+
+Pre realistickejší paper trading poskytuje repo adaptér na **verejné** Kraken market dáta (`polymarket_bot/exchange/kraken_client.py`):
+-   **Zdroj dát**: REST API `https://api.kraken.com/0/public` (Ticker, OHLC) — **žiadne API kľúče, žiadne secrets**.
+-   **Režim**: Iba `dry_run` / paper trading. `buy()`/`sell()` v KrakenClient vyvolávajú `NotImplementedError` — reálne objednávky nie sú implementované (live obchodovanie vyžaduje samostatné ÁNO).
+-   **Integrácia**: V `config.yaml` nastav `exchange.platform: kraken` + `app.trading_mode: paper` → bot automaticky použije `KrakenClient` (reálne dáta) zabalený v `PaperTradingEngine` (simulované exekúcie so spreadom/slippage).
+-   **Podporované assety**: BTC, ETH, SOL, XRP, ADA, DOT, LINK → Kraken pair kódy (XBTUSD, ETHUSD, ...).
+-   **Definícia hotovej zmeny**: `npm`/`pytest` — všetky testy prejdú, PR z feature vetvy, merge až po Mariánovom ÁNO.
+
+---
+
+## 🚀 7. Prevádzkové pokyny
 
 1.  **Štart**: `python resilient_runner.py` (toto spustí bota a bude ho strážiť).
 2.  **Kontrola logov**: `tail -f amm_bot_24h.log` pre sledovanie runnera.

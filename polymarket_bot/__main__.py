@@ -109,8 +109,15 @@ class TradingBot:
         
         # Client Setup
         if self.config.app.trading_mode == "paper":
-            from polymarket_bot.exchange.client import PolymarketClient
-            raw_client = PolymarketClient(dry_run=True) 
+            if self.config.exchange.platform == "kraken":
+                # Paper trading on REAL public Kraken market data (read-only,
+                # no API keys). Order execution is simulated by PaperTradingEngine.
+                from polymarket_bot.exchange.kraken_client import KrakenClient
+                raw_client = KrakenClient(dry_run=True)
+                self.logger.info("Using Kraken public data adapter (paper trading, dry_run)")
+            else:
+                from polymarket_bot.exchange.client import PolymarketClient
+                raw_client = PolymarketClient(dry_run=True)
             self.client = PaperTradingEngine(raw_client, self.config)
         else:
             from polymarket_bot.exchange.amm_client import PolymarketAMMClient
