@@ -67,6 +67,8 @@ class KrakenClient(BaseExchangeClient):
         base_url: Optional[str] = None,
         request_timeout: float = 10.0,
         rate_limit_seconds: float = 0.25,
+        normalize_prices: bool = True,
+        normalization_lookback: int = 100,
     ):
         self.dry_run = dry_run
         self.base_url = (base_url or KRAKEN_PUBLIC_BASE).rstrip("/")
@@ -75,6 +77,15 @@ class KrakenClient(BaseExchangeClient):
         self._connected = False
         self._session: Optional[aiohttp.ClientSession] = None
         self._last_request_ts = 0.0
+        # Price normalisation: the decision engine (DecisionEngine.should_enter,
+        # bin_price, PaperTradingEngine fills) operates in the Polymarket
+        # probability domain (0, 1]. Raw Kraken prices are in USD (BTC ~ 70 000),
+        # so they must be min-max scaled into [0.01, 0.99] over a rolling window
+        # — the exact method used and validated by scripts/kraken_smoke_test.py.
+        # Without it every evaluation fails with "price must be in (0, 1]".
+        self.normalize_prices = normalize_prices
+        self.normalization_lookback = max(2, int(normalization_lookback))
+        self._price_windows: Dict[str, List[float]] = {}
 
     # ------------------------------------------------------------------ #
     # Connection lifecycle                                               #
@@ -185,9 +196,34 @@ class KrakenClient(BaseExchangeClient):
         return out
 
     async def get_ticker(self, asset: str, window: str = "5m") -> float:
-        """Latest close price for the asset at the requested window."""
+        """Latest price for the asset at the requested window.
+
+        With ``normalize_prices`` enabled (default) the raw USD close is
+        min-max scaled over a rolling window of recent closes into the
+        (0, 1] probability domain required by the decision engine — same
+        formula as scripts/kraken_smoke_test.py::normalize().
+        """
         candles = await self.get_ohlc(asset, window, count=2)
-        return candles[-1]["close"]
+        raw = candles[-1]["close"]
+        if not self.normalize_prices:
+            return raw
+
+        key = f"{asset}:{window}"
+        win = self._price_windows.get(key)
+        if win is None:
+            # Seed the rolling window with recent history so the first
+            # evaluation already has a meaningful min/max.
+            hist = await self.get_ohlc(asset, window, count=self.normalization_lookback)
+            win = [c["close"] for c in hist[-self.normalization_lookback:]]
+        win.append(raw)
+        if len(win) > self.normalization_lookback:
+            win.pop(0)
+        self._price_windows[key] = win
+
+        lo, hi = min(win), max(win)
+        if hi - lo < 1e-12:
+            return 0.5
+        return 0.01 + 0.98 * (raw - lo) / (hi - lo)
 
     async def get_volume_24h(self, asset: str) -> float:
         """24h traded volume (base currency) from the public Ticker endpoint."""
